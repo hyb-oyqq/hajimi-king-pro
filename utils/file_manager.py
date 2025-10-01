@@ -17,6 +17,7 @@ class Checkpoint:
     wait_send_balancer: Set[str] = field(default_factory=set)
     wait_send_gpt_load: Set[str] = field(default_factory=set)
     wait_send_gpt_load_paid: Set[str] = field(default_factory=set)
+    wait_send_gpt_load_rate_limited: Set[str] = field(default_factory=set)
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典格式，但不包含scanned_shas（单独存储）"""
@@ -25,7 +26,8 @@ class Checkpoint:
             "processed_queries": list(self.processed_queries),
             "wait_send_balancer": list(self.wait_send_balancer),
             "wait_send_gpt_load": list(self.wait_send_gpt_load),
-            "wait_send_gpt_load_paid": list(self.wait_send_gpt_load_paid)
+            "wait_send_gpt_load_paid": list(self.wait_send_gpt_load_paid),
+            "wait_send_gpt_load_rate_limited": list(self.wait_send_gpt_load_rate_limited)
         }
     
     @classmethod
@@ -37,7 +39,8 @@ class Checkpoint:
             processed_queries=set(data.get("processed_queries", [])),
             wait_send_balancer=set(data.get("wait_send_balancer", [])),
             wait_send_gpt_load=set(data.get("wait_send_gpt_load", [])),
-            wait_send_gpt_load_paid=set(data.get("wait_send_gpt_load_paid", []))
+            wait_send_gpt_load_paid=set(data.get("wait_send_gpt_load_paid", [])),
+            wait_send_gpt_load_rate_limited=set(data.get("wait_send_gpt_load_rate_limited", []))
         )
 
     def add_scanned_sha(self, sha: str) -> None:

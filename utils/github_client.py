@@ -186,6 +186,11 @@ class GitHubClient:
             metadata_response.raise_for_status()
             file_metadata = metadata_response.json()
 
+            # 检查返回的是否为列表（目录内容）而非单个文件
+            if isinstance(file_metadata, list):
+                logger.warning(t('unexpected_list_response', metadata_url))
+                return None
+
             # 检查是否有base64编码的内容
             encoding = file_metadata.get("encoding")
             content = file_metadata.get("content")

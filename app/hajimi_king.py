@@ -194,13 +194,31 @@ def process_item(item: Dict[str, Any]) -> tuple:
                 logger.info(f"ℹ️ 付费模型验证失败: {key[:20]}... ({paid_validation_result})")
                 
         elif "rate_limited" in validation_result:
-            rate_limited_keys.append(key)
             logger.warning(t('rate_limited_key', key, validation_result))
             
-            # 根据配置决定是否将429密钥视为有效密钥
-            if Config.parse_bool(Config.TREAT_RATE_LIMITED_AS_VALID):
-                valid_keys.append(key)
-                logger.info(f"⚠️➡️✅ 429密钥视为有效: {key[:20]}... (TREAT_RATE_LIMITED_AS_VALID=true)")
+            # 根据RATE_LIMITED_HANDLING配置决定如何处理429密钥
+            handling = Config.RATE_LIMITED_HANDLING.strip().lower()
+            
+            if handling == "discard":
+                # 丢弃：视为无效密钥，不做任何处理
+                logger.info(f"⏰❌ 429密钥已丢弃: {key[:20]}... (RATE_LIMITED_HANDLING=discard)")
+            elif handling == "save_only":
+                # 仅保存：添加到rate_limited_keys列表，仅保存到本地文件
+                rate_limited_keys.append(key)
+                logger.info(f"⏰💾 429密钥仅本地保存: {key[:20]}... (RATE_LIMITED_HANDLING=save_only)")
+            elif handling == "sync":
+                # 同步：视为正常密钥，同步到正常分组
+                rate_limited_keys.append(key)  # 仍然保存到429文件作为记录
+                valid_keys.append(key)  # 同时添加到有效密钥，会同步到正常分组
+                logger.info(f"⏰✅ 429密钥视为正常密钥: {key[:20]}... (RATE_LIMITED_HANDLING=sync)")
+            elif handling == "sync_separate":
+                # 分开同步：同步到单独的429分组
+                rate_limited_keys.append(key)  # 保存到429文件
+                logger.info(f"⏰🔄 429密钥将同步到独立分组: {key[:20]}... (RATE_LIMITED_HANDLING=sync_separate)")
+            else:
+                # 默认行为：仅保存到本地
+                rate_limited_keys.append(key)
+                logger.warning(f"⏰ 未知的RATE_LIMITED_HANDLING值: {handling}，使用默认行为(save_only)")
         else:
             logger.info(t('invalid_key', key, validation_result))
 
@@ -219,12 +237,20 @@ def process_item(item: Dict[str, Any]) -> tuple:
     if rate_limited_keys:
         file_manager.save_rate_limited_keys(repo_name, file_path, file_url, rate_limited_keys)
         logger.info(t('saved_rate_limited_keys', len(rate_limited_keys)))
+        
+        # 根据配置决定是否将429密钥同步到独立分组
+        if Config.RATE_LIMITED_HANDLING.strip().lower() == "sync_separate":
+            try:
+                sync_utils.add_rate_limited_keys_to_queue(rate_limited_keys)
+                logger.info(f"⏰ 已添加 {len(rate_limited_keys)} 个429密钥到独立上传队列")
+            except Exception as e:
+                logger.error(f"⏰ 添加429密钥到队列时出错: {e}")
 
     if paid_keys:
         file_manager.save_paid_keys(repo_name, file_path, file_url, paid_keys)
         logger.info(f"💎 已保存付费密钥: {len(paid_keys)} 个")
         
-        # 根据配置决定是否上传付费密钥到GPT Load Balancer
+        # 根据配置决定是否上传付费密钥到GPT-load
         if Config.parse_bool(Config.GPT_LOAD_PAID_SYNC_ENABLED):
             try:
                 sync_utils.add_paid_keys_to_queue(paid_keys)
@@ -359,9 +385,12 @@ def main():
     balancer_queue_count = len(checkpoint.wait_send_balancer)
     gpt_load_queue_count = len(checkpoint.wait_send_gpt_load)
     gpt_load_paid_queue_count = len(checkpoint.wait_send_gpt_load_paid)
+    gpt_load_rate_limited_queue_count = len(checkpoint.wait_send_gpt_load_rate_limited)
     logger.info(t('queue_status', balancer_queue_count, gpt_load_queue_count))
     if gpt_load_paid_queue_count > 0:
         logger.info(f"💎 付费密钥队列: {gpt_load_paid_queue_count} 个待发送")
+    if gpt_load_rate_limited_queue_count > 0:
+        logger.info(f"⏰ 429密钥队列: {gpt_load_rate_limited_queue_count} 个待发送")
 
     # 3. 显示系统信息
     search_queries = file_manager.get_search_queries()

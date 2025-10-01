@@ -201,18 +201,28 @@ PROXY=http://localhost:1080
 | `GEMINI_BALANCER_SYNC_ENABLED` | `false` | 是否启用Gemini Balancer同步 🔗                        |
 | `GEMINI_BALANCER_URL` | 空 | Gemini Balancer服务地址（http://your-gemini-balancer.com） 🌐 |
 | `GEMINI_BALANCER_AUTH` | 空 | Gemini Balancer认证信息(密码） 🔐                      |
-| `GPT_LOAD_SYNC_ENABLED` | `false` | 是否启用GPT Load Balancer同步 🔗                      |
+| `GPT_LOAD_SYNC_ENABLED` | `false` | 是否启用GPT-load同步 🔗                      |
 | `GPT_LOAD_URL` | 空 | GPT Load 服务地址（http://your-gpt-load.com） 🌐      |
 | `GPT_LOAD_AUTH` | 空 | GPT Load 认证Token（页面密码） 🔐                       |
 | `GPT_LOAD_GROUP_NAME` | 空 | GPT Load 组名，多个用逗号分隔（group1,group2） 👥           |
 | `GPT_LOAD_PAID_SYNC_ENABLED` | `false` | 是否将付费密钥上传到独立分组 💎                         |
 | `GPT_LOAD_PAID_GROUP_NAME` | 空 | GPT Load 付费密钥的独立分组名（如：paid_group） 💎          |
+| `RATE_LIMITED_HANDLING` | `save_only` | 429密钥处理策略：`discard`/`save_only`/`sync`/`sync_separate` ⏰ |
+| `GPT_LOAD_RATE_LIMITED_GROUP_NAME` | 空 | 429密钥独立分组名（当`RATE_LIMITED_HANDLING=sync_separate`时使用） ⏰ |
+
+#### 💡 关于 `RATE_LIMITED_HANDLING` 配置说明
+
+此配置用于控制429限速密钥的处理策略，提供4种选项：
+
+- **`discard`**：丢弃，视为无效密钥，不做任何保存或同步
+- **`save_only`**（默认）：仅保存到本地专用文件（`key_429_*.txt`），不同步到外部系统
+- **`sync`**：视为正常密钥，与有效密钥一起同步到正常分组
+- **`sync_separate`**：同步到独立的429专用分组（需配置`GPT_LOAD_RATE_LIMITED_GROUP_NAME`）
 
 ### 🟢 可选配置（不懂就别动）😅
 
 | 变量名                              | 默认值                                        | 说明 |
 |----------------------------------|----------------------------------------------|------|
-| `TREAT_RATE_LIMITED_AS_VALID`    | `false`                                      | 是否将429限速密钥同步到外部系统（true=同步，false=仅本地保存）⏰ |
 | `HAJIMI_PAID_MODEL`              | `gemini-2.5-pro-preview-03-25`       | 用于验证付费密钥的模型 💎 |
 | `VALID_KEY_PREFIX`               | `keys/keys_valid_`                           | 有效密钥文件名前缀 🗝️ |
 | `RATE_LIMITED_KEY_PREFIX`        | `keys/key_429_`                              | 频率限制密钥文件名前缀 ⏰ |
@@ -246,18 +256,21 @@ GEMINI_BALANCER_SYNC_ENABLED=false
 GEMINI_BALANCER_URL=
 GEMINI_BALANCER_AUTH=
 
-# GPT Load Balancer同步配置
+# GPT-load同步配置
 GPT_LOAD_SYNC_ENABLED=false
 GPT_LOAD_URL=
 GPT_LOAD_AUTH=
 GPT_LOAD_GROUP_NAME=group1,group2,group3
 
-# GPT Load Balancer - 付费密钥配置
+# GPT-load - 付费密钥配置
 GPT_LOAD_PAID_SYNC_ENABLED=false
 GPT_LOAD_PAID_GROUP_NAME=paid_group
 
+# 429限速密钥处理策略
+RATE_LIMITED_HANDLING=save_only
+GPT_LOAD_RATE_LIMITED_GROUP_NAME=rate_limited_group
+
 # 高级配置（建议保持默认）
-TREAT_RATE_LIMITED_AS_VALID=false
 HAJIMI_PAID_MODEL=gemini-2.0-flash-thinking-exp-01-21
 VALID_KEY_PREFIX=keys/keys_valid_
 RATE_LIMITED_KEY_PREFIX=keys/key_429_

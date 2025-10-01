@@ -32,18 +32,20 @@ class Config:
     GEMINI_BALANCER_URL = os.getenv("GEMINI_BALANCER_URL", "")
     GEMINI_BALANCER_AUTH = os.getenv("GEMINI_BALANCER_AUTH", "")
 
-    # GPT Load Balancer Configuration
+    # GPT-load Configuration
     GPT_LOAD_SYNC_ENABLED = os.getenv("GPT_LOAD_SYNC_ENABLED", "false")
     GPT_LOAD_URL = os.getenv('GPT_LOAD_URL', '')
     GPT_LOAD_AUTH = os.getenv('GPT_LOAD_AUTH', '')
     GPT_LOAD_GROUP_NAME = os.getenv('GPT_LOAD_GROUP_NAME', '')
     
-    # GPT Load Balancer - Paid Keys Configuration
+    # GPT-load - Paid Keys Configuration
     GPT_LOAD_PAID_SYNC_ENABLED = os.getenv("GPT_LOAD_PAID_SYNC_ENABLED", "false")
     GPT_LOAD_PAID_GROUP_NAME = os.getenv('GPT_LOAD_PAID_GROUP_NAME', '')
     
     # 429限速密钥处理策略
-    TREAT_RATE_LIMITED_AS_VALID = os.getenv("TREAT_RATE_LIMITED_AS_VALID", "false")
+    # 可选值: discard, save_only, sync, sync_separate
+    RATE_LIMITED_HANDLING = os.getenv("RATE_LIMITED_HANDLING", "save_only")
+    GPT_LOAD_RATE_LIMITED_GROUP_NAME = os.getenv('GPT_LOAD_RATE_LIMITED_GROUP_NAME', '')
 
     # 文件前缀配置
     VALID_KEY_PREFIX = os.getenv("VALID_KEY_PREFIX", "keys/keys_valid_")
@@ -149,7 +151,7 @@ class Config:
         else:
             logger.info(t('balancer_not_configured'))
 
-        # 检查GPT Load Balancer配置
+        # 检查GPT-load配置
         if cls.parse_bool(cls.GPT_LOAD_SYNC_ENABLED):
             logger.info(t('gpt_load_enabled', cls.GPT_LOAD_URL))
             if not cls.GPT_LOAD_AUTH or not cls.GPT_LOAD_URL or not cls.GPT_LOAD_GROUP_NAME:
@@ -186,7 +188,8 @@ logger.info(f"GPT_LOAD_AUTH: {'Configured' if Config.GPT_LOAD_AUTH else 'Not con
 logger.info(f"GPT_LOAD_GROUP_NAME: {Config.GPT_LOAD_GROUP_NAME or 'Not configured'}")
 logger.info(f"GPT_LOAD_PAID_SYNC_ENABLED: {Config.parse_bool(Config.GPT_LOAD_PAID_SYNC_ENABLED)}")
 logger.info(f"GPT_LOAD_PAID_GROUP_NAME: {Config.GPT_LOAD_PAID_GROUP_NAME or 'Not configured'}")
-logger.info(f"TREAT_RATE_LIMITED_AS_VALID: {Config.parse_bool(Config.TREAT_RATE_LIMITED_AS_VALID)}")
+logger.info(f"RATE_LIMITED_HANDLING: {Config.RATE_LIMITED_HANDLING}")
+logger.info(f"GPT_LOAD_RATE_LIMITED_GROUP_NAME: {Config.GPT_LOAD_RATE_LIMITED_GROUP_NAME or 'Not configured'}")
 logger.info(f"VALID_KEY_PREFIX: {Config.VALID_KEY_PREFIX}")
 logger.info(f"RATE_LIMITED_KEY_PREFIX: {Config.RATE_LIMITED_KEY_PREFIX}")
 logger.info(f"KEYS_SEND_PREFIX: {Config.KEYS_SEND_PREFIX}")
