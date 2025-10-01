@@ -309,6 +309,12 @@ def main():
             loop_count += 1
             logger.info(f"🔄 Loop #{loop_count} - {datetime.now().strftime('%H:%M:%S')}")
 
+            # 清空上一轮的已处理查询，准备新一轮搜索
+            if loop_count > 1:
+                checkpoint.processed_queries.clear()
+                file_manager.save_checkpoint(checkpoint)
+                logger.info("🔄 Cleared processed queries from previous loop")
+
             query_count = 0
             loop_processed_files = 0
             reset_skip_stats()
