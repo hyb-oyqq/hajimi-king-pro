@@ -7,6 +7,10 @@ import requests
 
 from common.Logger import logger
 from common.config import Config
+from common.translations import get_translator
+
+# 获取翻译函数
+t = get_translator().t
 
 
 class GitHubClient:
@@ -69,7 +73,7 @@ class GitHubClient:
                     rate_limit_remaining = response.headers.get('X-RateLimit-Remaining')
                     # 只在剩余次数很少时警告
                     if rate_limit_remaining and int(rate_limit_remaining) < 3:
-                        logger.warning(f"⚠️ Rate limit low: {rate_limit_remaining} remaining, token: {current_token}")
+                        logger.warning(t('rate_limit_low', rate_limit_remaining, current_token))
                     response.raise_for_status()
                     page_result = response.json()
                     page_success = True
@@ -83,13 +87,13 @@ class GitHubClient:
                         wait = min(2 ** attempt + random.uniform(0, 1), 60)
                         # 只在严重情况下记录详细日志
                         if attempt >= 3:
-                            logger.warning(f"❌ Rate limit hit, status:{status} (attempt {attempt}/{max_retries}) - waiting {wait:.1f}s")
+                            logger.warning(t('rate_limit_hit', status, attempt, max_retries, wait))
                         time.sleep(wait)
                         continue
                     else:
                         # 其他HTTP错误，只在最后一次尝试时记录
                         if attempt == max_retries:
-                            logger.error(f"❌ HTTP {status} error after {max_retries} attempts on page {page}")
+                            logger.error(t('http_error', status, max_retries, page))
                         time.sleep(2 ** attempt)
                         continue
 
@@ -99,7 +103,7 @@ class GitHubClient:
 
                     # 只在最后一次尝试时记录网络错误
                     if attempt == max_retries:
-                        logger.error(f"❌ Network error after {max_retries} attempts on page {page}: {type(e).__name__}")
+                        logger.error(t('network_error', max_retries, page, type(e).__name__))
 
                     time.sleep(wait)
                     continue
@@ -107,7 +111,7 @@ class GitHubClient:
             if not page_success or not page_result:
                 if page == 1:
                     # 第一页失败是严重问题
-                    logger.error(f"❌ First page failed for query: {query[:50]}...")
+                    logger.error(t('first_page_failed', query[:50]))
                     break
                 # 后续页面失败不记录，统计信息会体现
                 continue
@@ -134,7 +138,7 @@ class GitHubClient:
 
             if page < 10:
                 sleep_time = random.uniform(0.5, 1.5)
-                logger.info(f"⏳ Processing query: 【{query}】,page {page},item count: {current_page_count},expected total: {expected_total},total count: {total_count},random sleep: {sleep_time:.1f}s")
+                logger.info(t('processing_query', query, page, current_page_count, expected_total, total_count, sleep_time))
                 time.sleep(sleep_time)
 
         final_count = len(all_items)
@@ -143,10 +147,10 @@ class GitHubClient:
         if expected_total and final_count < expected_total:
             discrepancy = expected_total - final_count
             if discrepancy > expected_total * 0.1:  # 超过10%数据丢失
-                logger.warning(f"⚠️ Significant data loss: {discrepancy}/{expected_total} items missing ({discrepancy / expected_total * 100:.1f}%)")
+                logger.warning(t('data_loss_warning', discrepancy, expected_total, discrepancy / expected_total * 100))
 
         # 主要成功日志 - 一条日志包含所有关键信息
-        logger.info(f"🔍 GitHub search complete: query:【{query}】 | page success count:{pages_processed} | items count:{final_count}/{expected_total or '?'} | total requests:{total_requests} ")
+        logger.info(t('search_complete', query, pages_processed, final_count, expected_total or '?', total_requests))
 
         result = {
             "total_count": total_count,
@@ -173,7 +177,7 @@ class GitHubClient:
             # 获取proxy配置
             proxies = Config.get_random_proxy()
 
-            logger.info(f"🔍 Processing file: {metadata_url}")
+            logger.info(t('processing_file', metadata_url))
             if proxies:
                 metadata_response = requests.get(metadata_url, headers=headers, proxies=proxies)
             else:
@@ -192,24 +196,24 @@ class GitHubClient:
                     decoded_content = base64.b64decode(content).decode('utf-8')
                     return decoded_content
                 except Exception as e:
-                    logger.warning(f"⚠️ Failed to decode base64 content: {e}, falling back to download_url")
+                    logger.warning(t('decode_failed', e))
             
             # 如果没有base64内容或解码失败，使用原有的download_url逻辑
             download_url = file_metadata.get("download_url")
             if not download_url:
-                logger.warning(f"⚠️ No download URL found for file: {metadata_url}")
+                logger.warning(t('no_download_url', metadata_url))
                 return None
 
             if proxies:
                 content_response = requests.get(download_url, headers=headers, proxies=proxies)
             else:
                 content_response = requests.get(download_url, headers=headers)
-            logger.info(f"⏳ checking for keys from:  {download_url},status: {content_response.status_code}")
+            logger.info(t('checking_keys_from', download_url, content_response.status_code))
             content_response.raise_for_status()
             return content_response.text
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Failed to fetch file content: {metadata_url}, {type(e).__name__}")
+            logger.error(t('fetch_file_failed', metadata_url, type(e).__name__))
             return None
 
     @staticmethod

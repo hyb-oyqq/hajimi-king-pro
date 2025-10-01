@@ -5,6 +5,7 @@ from typing import Dict, Optional
 from dotenv import load_dotenv
 
 from common.Logger import logger
+from common.translations import get_translator
 
 # 只在环境变量不存在时才从.env加载值
 load_dotenv(override=False)
@@ -62,6 +63,9 @@ class Config:
     FILE_PATH_BLACKLIST_STR = os.getenv("FILE_PATH_BLACKLIST", "readme,docs,doc/,.md,sample,tutorial")
     FILE_PATH_BLACKLIST = [token.strip().lower() for token in FILE_PATH_BLACKLIST_STR.split(',') if token.strip()]
 
+    # 语言配置
+    LANGUAGE = os.getenv("LANGUAGE", "zh_cn").lower()
+
     @classmethod
     def parse_bool(cls, value: str) -> bool:
         """
@@ -113,48 +117,53 @@ class Config:
         Returns:
             bool: 配置是否完整
         """
-        logger.info("🔍 Checking required configurations...")
+        t = get_translator(cls.LANGUAGE).t
+        logger.info(t('checking_config'))
         
         errors = []
         
         # 检查GitHub tokens
         if not cls.GITHUB_TOKENS:
-            errors.append("GitHub tokens not found. Please set GITHUB_TOKENS environment variable.")
-            logger.error("❌ GitHub tokens: Missing")
+            errors.append(t('github_tokens_missing'))
+            logger.error(t('github_tokens_missing_short'))
         else:
-            logger.info(f"✅ GitHub tokens: {len(cls.GITHUB_TOKENS)} configured")
+            logger.info(t('github_tokens_ok', len(cls.GITHUB_TOKENS)))
         
         # 检查Gemini Balancer配置
         if cls.GEMINI_BALANCER_SYNC_ENABLED:
-            logger.info(f"✅ Gemini Balancer enabled, URL: {cls.GEMINI_BALANCER_URL}")
+            logger.info(t('balancer_enabled', cls.GEMINI_BALANCER_URL))
             if not cls.GEMINI_BALANCER_AUTH or not cls.GEMINI_BALANCER_URL:
-                logger.warning("⚠️ Gemini Balancer Auth or URL Missing (Balancer功能将被禁用)")
+                logger.warning(t('balancer_missing'))
             else:
-                logger.info(f"✅ Gemini Balancer Auth: ****")
+                logger.info(t('balancer_ok'))
         else:
-            logger.info("ℹ️ Gemini Balancer URL: Not configured (Balancer功能将被禁用)")
+            logger.info(t('balancer_not_configured'))
 
         # 检查GPT Load Balancer配置
         if cls.parse_bool(cls.GPT_LOAD_SYNC_ENABLED):
-            logger.info(f"✅ GPT Load Balancer enabled, URL: {cls.GPT_LOAD_URL}")
+            logger.info(t('gpt_load_enabled', cls.GPT_LOAD_URL))
             if not cls.GPT_LOAD_AUTH or not cls.GPT_LOAD_URL or not cls.GPT_LOAD_GROUP_NAME:
-                logger.warning("⚠️ GPT Load Balancer Auth, URL or Group Name Missing (Load Balancer功能将被禁用)")
+                logger.warning(t('gpt_load_missing'))
             else:
-                logger.info(f"✅ GPT Load Balancer Auth: ****")
-                logger.info(f"✅ GPT Load Balancer Group Name: {cls.GPT_LOAD_GROUP_NAME}")
+                logger.info(t('gpt_load_ok'))
+                logger.info(t('gpt_load_group_name', cls.GPT_LOAD_GROUP_NAME))
         else:
-            logger.info("ℹ️ GPT Load Balancer: Not configured (Load Balancer功能将被禁用)")
+            logger.info(t('gpt_load_not_configured'))
 
         if errors:
-            logger.error("❌ Configuration check failed:")
-            logger.info("Please check your .env file and configuration.")
+            logger.error(t('config_check_failed_details'))
+            logger.info(t('check_env_file'))
             return False
         
-        logger.info("✅ All required configurations are valid")
+        logger.info(t('all_config_valid'))
         return True
 
 
+# 初始化翻译器
+get_translator(Config.LANGUAGE)
+
 logger.info(f"*" * 30 + " CONFIG START " + "*" * 30)
+logger.info(f"LANGUAGE: {Config.LANGUAGE}")
 logger.info(f"GITHUB_TOKENS: {len(Config.GITHUB_TOKENS)} tokens")
 logger.info(f"DATA_PATH: {Config.DATA_PATH}")
 logger.info(f"PROXY_LIST: {len(Config.PROXY_LIST)} proxies configured")

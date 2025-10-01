@@ -353,56 +353,74 @@ class FileManager:
         if self._keys_valid_filename:
             basename = os.path.basename(self._keys_valid_filename)
             if self._need_filename_update(basename, Config.VALID_KEY_PREFIX, current_date_str, current_hour_str):
-                self._keys_valid_filename = os.path.join(
+                new_filename = os.path.join(
                     self.data_dir,
                     f"{Config.VALID_KEY_PREFIX}{current_time.strftime('%Y%m%d')}.txt"
                 )
+                logger.info(f"📅 Date changed, creating new valid keys file: {os.path.basename(new_filename)}")
+                self._keys_valid_filename = new_filename
+                self._ensure_file_exists(self._keys_valid_filename)
 
         # 更新rate_limited文件名
         if self._rate_limited_filename:
             basename = os.path.basename(self._rate_limited_filename)
             if self._need_filename_update(basename, Config.RATE_LIMITED_KEY_PREFIX, current_date_str, current_hour_str):
-                self._rate_limited_filename = os.path.join(
+                new_filename = os.path.join(
                     self.data_dir,
                     f"{Config.RATE_LIMITED_KEY_PREFIX}{current_time.strftime('%Y%m%d')}.txt"
                 )
+                logger.info(f"📅 Date changed, creating new rate limited keys file: {os.path.basename(new_filename)}")
+                self._rate_limited_filename = new_filename
+                self._ensure_file_exists(self._rate_limited_filename)
 
         # 更新keys_send文件名
         if self._keys_send_filename:
             basename = os.path.basename(self._keys_send_filename)
             if self._need_filename_update(basename, Config.KEYS_SEND_PREFIX, current_date_str, current_hour_str):
-                self._keys_send_filename = os.path.join(
+                new_filename = os.path.join(
                     self.data_dir,
                     f"{Config.KEYS_SEND_PREFIX}{current_time.strftime('%Y%m%d')}.txt"
                 )
+                logger.info(f"📅 Date changed, creating new keys send file: {os.path.basename(new_filename)}")
+                self._keys_send_filename = new_filename
+                self._ensure_file_exists(self._keys_send_filename)
 
         # 更新detail_log文件名（按日期分割）
         if self._detail_log_filename:
             basename = os.path.basename(self._detail_log_filename)
             detail_prefix = Config.VALID_KEY_DETAIL_PREFIX.rstrip('_')
             if self._need_daily_filename_update(basename, detail_prefix, current_date_str):
-                self._detail_log_filename = os.path.join(
+                new_filename = os.path.join(
                     self.data_dir,
                     f"{detail_prefix}{current_date_str}.log"
                 )
+                logger.info(f"📅 Date changed, creating new valid keys detail log: {os.path.basename(new_filename)}")
+                self._detail_log_filename = new_filename
+                self._ensure_file_exists(self._detail_log_filename)
 
         # 更新rate_limited_detail文件名（按日期分割）
         if self._rate_limited_detail_filename:
             basename = os.path.basename(self._rate_limited_detail_filename)
             if self._need_daily_filename_update(basename, Config.RATE_LIMITED_KEY_DETAIL_PREFIX, current_date_str):
-                self._rate_limited_detail_filename = os.path.join(
+                new_filename = os.path.join(
                     self.data_dir,
                     f"{Config.RATE_LIMITED_KEY_DETAIL_PREFIX}{current_date_str}.log"
                 )
+                logger.info(f"📅 Date changed, creating new rate limited detail log: {os.path.basename(new_filename)}")
+                self._rate_limited_detail_filename = new_filename
+                self._ensure_file_exists(self._rate_limited_detail_filename)
 
         # 更新keys_send_detail文件名（按日期分割）
         if self._keys_send_detail_filename:
             basename = os.path.basename(self._keys_send_detail_filename)
             if self._need_daily_filename_update(basename, Config.KEYS_SEND_DETAIL_PREFIX, current_date_str):
-                self._keys_send_detail_filename = os.path.join(
+                new_filename = os.path.join(
                     self.data_dir,
                     f"{Config.KEYS_SEND_DETAIL_PREFIX}{current_date_str}.log"
                 )
+                logger.info(f"📅 Date changed, creating new keys send detail log: {os.path.basename(new_filename)}")
+                self._keys_send_detail_filename = new_filename
+                self._ensure_file_exists(self._keys_send_detail_filename)
 
 
 
@@ -466,12 +484,11 @@ class FileManager:
             logger.error(f"Failed to create default queries file {queries_file}: {e}")
 
     def _need_filename_update(self, basename: str, prefix: str, current_date: str, current_hour: str) -> bool:
-        """检查是否需要更新文件名"""
+        """检查是否需要更新文件名（仅检查日期变化）"""
         try:
+            # 文件名格式：keys_valid_20251001.txt
             time_part = basename[len(prefix):].replace('.txt', '')
-            if '_' in time_part:
-                filename_date, filename_hour = time_part.split('_', 1)
-                return filename_date != current_date or filename_hour != current_hour
+            return time_part != current_date
         except (IndexError, ValueError):
             pass
         return True
@@ -484,6 +501,25 @@ class FileManager:
         except (IndexError, ValueError):
             pass
         return True
+
+    def _ensure_file_exists(self, filename: str) -> None:
+        """确保文件存在，如果不存在则创建（包括父目录）"""
+        if not filename:
+            return
+        
+        try:
+            # 确保父目录存在
+            parent_dir = os.path.dirname(filename)
+            if parent_dir:
+                os.makedirs(parent_dir, exist_ok=True)
+            
+            # 如果文件不存在，则创建空文件
+            if not os.path.exists(filename):
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write("")
+                logger.info(f"✅ Created new file: {filename}")
+        except Exception as e:
+            logger.error(f"Failed to create file {filename}: {e}")
 
 file_manager = FileManager(Config.DATA_PATH)
 checkpoint = file_manager.load_checkpoint()
