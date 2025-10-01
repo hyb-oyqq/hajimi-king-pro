@@ -553,8 +553,10 @@ class FileManager:
     def _need_filename_update(self, basename: str, prefix: str, current_date: str, current_hour: str) -> bool:
         """检查是否需要更新文件名（仅检查日期变化）"""
         try:
+            # prefix 可能包含路径（如 keys/keys_valid_），只取文件名部分
+            prefix_basename = os.path.basename(prefix)
             # 文件名格式：keys_valid_20251001.txt
-            time_part = basename[len(prefix):].replace('.txt', '')
+            time_part = basename[len(prefix_basename):].replace('.txt', '')
             return time_part != current_date
         except (IndexError, ValueError):
             pass
@@ -563,7 +565,10 @@ class FileManager:
     def _need_daily_filename_update(self, basename: str, prefix: str, current_date: str) -> bool:
         """检查是否需要更新按日期分割的文件名"""
         try:
-            time_part = basename[len(prefix):].replace('.log', '')
+            # prefix 可能包含路径（如 logs/keys_valid_detail_），只取文件名部分
+            prefix_basename = os.path.basename(prefix)
+            # 文件名格式：keys_valid_detail20251001.log
+            time_part = basename[len(prefix_basename):].replace('.log', '')
             return time_part != current_date
         except (IndexError, ValueError):
             pass

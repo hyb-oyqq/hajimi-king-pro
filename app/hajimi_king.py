@@ -193,7 +193,7 @@ def process_item(item: Dict[str, Any]) -> tuple:
             else:
                 logger.info(f"ℹ️ 付费模型验证失败: {key[:20]}... ({paid_validation_result})")
                 
-        elif validation_result == "rate_limited":
+        elif "rate_limited" in validation_result:
             rate_limited_keys.append(key)
             logger.warning(t('rate_limited_key', key, validation_result))
         else:
