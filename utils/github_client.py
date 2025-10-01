@@ -39,6 +39,7 @@ class GitHubClient:
         total_requests = 0
         failed_requests = 0
         rate_limit_hits = 0
+        failed_pages = []  # 记录失败的页码
 
         for page in range(1, 11):
             page_result = None
@@ -113,7 +114,9 @@ class GitHubClient:
                     # 第一页失败是严重问题
                     logger.error(t('first_page_failed', query[:50]))
                     break
-                # 后续页面失败不记录，统计信息会体现
+                # 记录失败页面信息，便于诊断
+                failed_pages.append(page)
+                logger.warning(f"⚠️ 第 {page} 页请求失败，已跳过（可能导致数据丢失）")
                 continue
 
             pages_processed += 1
@@ -147,7 +150,10 @@ class GitHubClient:
         if expected_total and final_count < expected_total:
             discrepancy = expected_total - final_count
             if discrepancy > expected_total * 0.1:  # 超过10%数据丢失
-                logger.warning(t('data_loss_warning', discrepancy, expected_total, discrepancy / expected_total * 100))
+                warning_msg = t('data_loss_warning', discrepancy, expected_total, discrepancy / expected_total * 100)
+                if failed_pages:
+                    warning_msg += f" | 失败页面: {failed_pages}"
+                logger.warning(warning_msg)
 
         # 主要成功日志 - 一条日志包含所有关键信息
         logger.info(t('search_complete', query, pages_processed, final_count, expected_total or '?', total_requests))
