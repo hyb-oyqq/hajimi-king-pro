@@ -37,15 +37,21 @@ class Config:
     GPT_LOAD_URL = os.getenv('GPT_LOAD_URL', '')
     GPT_LOAD_AUTH = os.getenv('GPT_LOAD_AUTH', '')
     GPT_LOAD_GROUP_NAME = os.getenv('GPT_LOAD_GROUP_NAME', '')
+    
+    # GPT Load Balancer - Paid Keys Configuration
+    GPT_LOAD_PAID_SYNC_ENABLED = os.getenv("GPT_LOAD_PAID_SYNC_ENABLED", "false")
+    GPT_LOAD_PAID_GROUP_NAME = os.getenv('GPT_LOAD_PAID_GROUP_NAME', '')
 
     # 文件前缀配置
     VALID_KEY_PREFIX = os.getenv("VALID_KEY_PREFIX", "keys/keys_valid_")
     RATE_LIMITED_KEY_PREFIX = os.getenv("RATE_LIMITED_KEY_PREFIX", "keys/key_429_")
     KEYS_SEND_PREFIX = os.getenv("KEYS_SEND_PREFIX", "keys/keys_send_")
+    PAID_KEY_PREFIX = os.getenv("PAID_KEY_PREFIX", "keys/keys_paid_")
 
     VALID_KEY_DETAIL_PREFIX = os.getenv("VALID_KEY_DETAIL_PREFIX", "logs/keys_valid_detail_")
     RATE_LIMITED_KEY_DETAIL_PREFIX = os.getenv("RATE_LIMITED_KEY_DETAIL_PREFIX", "logs/key_429_detail_")
     KEYS_SEND_DETAIL_PREFIX = os.getenv("KEYS_SEND_DETAIL_PREFIX", "logs/keys_send_detail_")
+    PAID_KEY_DETAIL_PREFIX = os.getenv("PAID_KEY_DETAIL_PREFIX", "logs/keys_paid_detail_")
     
     # 日期范围过滤器配置 (单位：天)
     DATE_RANGE_DAYS = int(os.getenv("DATE_RANGE_DAYS", "730"))  # 默认730天 (约2年)
@@ -58,6 +64,7 @@ class Config:
 
     # Gemini模型配置
     HAJIMI_CHECK_MODEL = os.getenv("HAJIMI_CHECK_MODEL", "gemini-2.5-flash")
+    HAJIMI_PAID_MODEL = os.getenv("HAJIMI_PAID_MODEL", "gemini-2.0-flash-thinking-exp-01-21")
 
     # 文件路径黑名单配置
     FILE_PATH_BLACKLIST_STR = os.getenv("FILE_PATH_BLACKLIST", "readme,docs,doc/,.md,sample,tutorial")
@@ -174,16 +181,21 @@ logger.info(f"GPT_LOAD_SYNC_ENABLED: {Config.parse_bool(Config.GPT_LOAD_SYNC_ENA
 logger.info(f"GPT_LOAD_URL: {Config.GPT_LOAD_URL or 'Not configured'}")
 logger.info(f"GPT_LOAD_AUTH: {'Configured' if Config.GPT_LOAD_AUTH else 'Not configured'}")
 logger.info(f"GPT_LOAD_GROUP_NAME: {Config.GPT_LOAD_GROUP_NAME or 'Not configured'}")
+logger.info(f"GPT_LOAD_PAID_SYNC_ENABLED: {Config.parse_bool(Config.GPT_LOAD_PAID_SYNC_ENABLED)}")
+logger.info(f"GPT_LOAD_PAID_GROUP_NAME: {Config.GPT_LOAD_PAID_GROUP_NAME or 'Not configured'}")
 logger.info(f"VALID_KEY_PREFIX: {Config.VALID_KEY_PREFIX}")
 logger.info(f"RATE_LIMITED_KEY_PREFIX: {Config.RATE_LIMITED_KEY_PREFIX}")
 logger.info(f"KEYS_SEND_PREFIX: {Config.KEYS_SEND_PREFIX}")
+logger.info(f"PAID_KEY_PREFIX: {Config.PAID_KEY_PREFIX}")
 logger.info(f"VALID_KEY_DETAIL_PREFIX: {Config.VALID_KEY_DETAIL_PREFIX}")
 logger.info(f"RATE_LIMITED_KEY_DETAIL_PREFIX: {Config.RATE_LIMITED_KEY_DETAIL_PREFIX}")
 logger.info(f"KEYS_SEND_DETAIL_PREFIX: {Config.KEYS_SEND_DETAIL_PREFIX}")
+logger.info(f"PAID_KEY_DETAIL_PREFIX: {Config.PAID_KEY_DETAIL_PREFIX}")
 logger.info(f"DATE_RANGE_DAYS: {Config.DATE_RANGE_DAYS} days")
 logger.info(f"QUERIES_FILE: {Config.QUERIES_FILE}")
 logger.info(f"SCANNED_SHAS_FILE: {Config.SCANNED_SHAS_FILE}")
 logger.info(f"HAJIMI_CHECK_MODEL: {Config.HAJIMI_CHECK_MODEL}")
+logger.info(f"HAJIMI_PAID_MODEL: {Config.HAJIMI_PAID_MODEL}")
 logger.info(f"FILE_PATH_BLACKLIST: {len(Config.FILE_PATH_BLACKLIST)} items")
 logger.info(f"*" * 30 + " CONFIG END " + "*" * 30)
 

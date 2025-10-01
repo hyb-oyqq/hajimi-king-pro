@@ -11,12 +11,13 @@
 3. **增量扫描** 📊 - 支持断点续传，避免重复扫描已处理的文件
 4. **智能过滤** 🚫 - 自动过滤文档、示例、测试文件，专注有效代码
 5. **外部同步** 🔄 - 支持向[Gemini-Balancer](https://github.com/snailyp/gemini-balance)和[GPT-Load](https://github.com/tbphp/gpt-load)同步发现的密钥
+6. **付费key检测**💰 - 检查到有效key时自动再次检查是否为付费key
 
 ### 🔮 待开发功能 (TODO)
 
 - [ ] **数据库支持保存key** 💾 - 支持将发现的API密钥持久化存储到数据库中
 - [ ] **API、可视化展示抓取的key列表** 📊 - 提供API接口和可视化界面获取已抓取的密钥列表
-- [ ] **付费key检测** 💰 - 额外check下付费key
+- [x] **付费key检测** 💰 - 额外check下付费key
 
 ## 📋 目录 🗂️
 
@@ -101,8 +102,8 @@ Ctrl + C
 version: '3.8'
 services:
   hajimi-king:
-    image: ghcr.io/gakkinoone/hajimi-king:latest
-    container_name: hajimi-king
+    image: ghcr.io/hyb-oyqq/hajimi-king-pro:latest
+    container_name: hajimi-king-pro
     restart: unless-stopped
     environment:
       # 必填：GitHub访问令牌
@@ -121,8 +122,8 @@ services:
 version: '3.8'
 services:
   hajimi-king:
-    image: ghcr.io/gakkinoone/hajimi-king:latest
-    container_name: hajimi-king
+    image: ghcr.io/hyb-oyqq/hajimi-king-pro:latest
+    container_name: hajimi-king-pro
     restart: unless-stopped
     env_file:
       - .env
@@ -194,19 +195,25 @@ PROXY=http://localhost:1080
 | `GPT_LOAD_URL` | 空 | GPT Load 服务地址（http://your-gpt-load.com） 🌐      |
 | `GPT_LOAD_AUTH` | 空 | GPT Load 认证Token（页面密码） 🔐                       |
 | `GPT_LOAD_GROUP_NAME` | 空 | GPT Load 组名，多个用逗号分隔（group1,group2） 👥           |
+| `GPT_LOAD_PAID_SYNC_ENABLED` | `false` | 是否将付费密钥上传到独立分组 💎                         |
+| `GPT_LOAD_PAID_GROUP_NAME` | 空 | GPT Load 付费密钥的独立分组名（如：paid_group） 💎          |
 
 ### 🟢 可选配置（不懂就别动）😅
 
-| 变量名                              | 默认值                                | 说明 |
-|----------------------------------|------------------------------------|------|
-| `VALID_KEY_PREFIX`               | `keys/keys_valid_`                 | 有效密钥文件名前缀 🗝️ |
-| `RATE_LIMITED_KEY_PREFIX`        | `keys/key_429_`                    | 频率限制密钥文件名前缀 ⏰ |
-| `KEYS_SEND_PREFIX`               | `keys/keys_send_`                  | 发送到外部应用的密钥文件名前缀 🚀 |
-| `VALID_KEY_DETAIL_PREFIX`        | `logs/keys_valid_detail_`          | 详细日志文件名前缀 📝 |
-| `RATE_LIMITED_KEY_DETAIL_PREFIX` | `logs/key_429_detail_`             | 频率限制详细日志文件名前缀 📊 |
-| `VALID_KEY_DETAIL_PREFIX`        | `logs/keys_valid_detail_`          | 有效密钥文件名前缀 🗝️ |
-| `SCANNED_SHAS_FILE`              | `scanned_shas.txt`                 | 已扫描文件SHA记录文件名 📋 |
-| `FILE_PATH_BLACKLIST`            | `readme,docs,doc/,.md,example,...` | 文件路径黑名单，逗号分隔 🚫 |
+| 变量名                              | 默认值                                        | 说明 |
+|----------------------------------|----------------------------------------------|------|
+| `HAJIMI_PAID_MODEL`              | `gemini-2.5-pro-preview-03-25`       | 用于验证付费密钥的模型 💎 |
+| `VALID_KEY_PREFIX`               | `keys/keys_valid_`                           | 有效密钥文件名前缀 🗝️ |
+| `RATE_LIMITED_KEY_PREFIX`        | `keys/key_429_`                              | 频率限制密钥文件名前缀 ⏰ |
+| `KEYS_SEND_PREFIX`               | `keys/keys_send_`                            | 发送到外部应用的密钥文件名前缀 🚀 |
+| `PAID_KEY_PREFIX`                | `keys/keys_paid_`                            | 付费密钥文件名前缀 💎 |
+| `VALID_KEY_DETAIL_PREFIX`        | `logs/keys_valid_detail_`                    | 有效密钥详细日志文件名前缀 📝 |
+| `RATE_LIMITED_KEY_DETAIL_PREFIX` | `logs/key_429_detail_`                       | 频率限制详细日志文件名前缀 📊 |
+| `KEYS_SEND_DETAIL_PREFIX`        | `logs/keys_send_detail_`                     | 发送密钥详细日志文件名前缀 🚀 |
+| `PAID_KEY_DETAIL_PREFIX`         | `logs/keys_paid_detail_`                     | 付费密钥详细日志文件名前缀 💎 |
+| `SCANNED_SHAS_FILE`              | `scanned_shas.txt`                           | 已扫描文件SHA记录文件名 📋 |
+| `FILE_PATH_BLACKLIST`            | `readme,docs,doc/,.md,example,...`           | 文件路径黑名单，逗号分隔 🚫 |
+| `LANGUAGE`                       | `zh_cn`                                      | 语言配置（zh_cn=简体中文, en=英文） 🌐 |
 
 ### 配置文件示例 💫
 
@@ -234,15 +241,23 @@ GPT_LOAD_URL=
 GPT_LOAD_AUTH=
 GPT_LOAD_GROUP_NAME=group1,group2,group3
 
+# GPT Load Balancer - 付费密钥配置
+GPT_LOAD_PAID_SYNC_ENABLED=false
+GPT_LOAD_PAID_GROUP_NAME=paid_group
+
 # 高级配置（建议保持默认）
+HAJIMI_PAID_MODEL=gemini-2.0-flash-thinking-exp-01-21
 VALID_KEY_PREFIX=keys/keys_valid_
 RATE_LIMITED_KEY_PREFIX=keys/key_429_
 KEYS_SEND_PREFIX=keys/keys_send_
+PAID_KEY_PREFIX=keys/keys_paid_
 VALID_KEY_DETAIL_PREFIX=logs/keys_valid_detail_
 RATE_LIMITED_KEY_DETAIL_PREFIX=logs/key_429_detail_
 KEYS_SEND_DETAIL_PREFIX=logs/keys_send_detail_
+PAID_KEY_DETAIL_PREFIX=logs/keys_paid_detail_
 SCANNED_SHAS_FILE=scanned_shas.txt
 FILE_PATH_BLACKLIST=readme,docs,doc/,.md,example,sample,tutorial,test,spec,demo,mock
+LANGUAGE=zh_cn
 ```
 
 ### 查询配置文件 🔍

@@ -175,6 +175,7 @@ def process_item(item: Dict[str, Any]) -> tuple:
 
     valid_keys = []
     rate_limited_keys = []
+    paid_keys = []
 
     # 验证每个密钥
     for key in keys:
@@ -182,6 +183,16 @@ def process_item(item: Dict[str, Any]) -> tuple:
         if validation_result and "ok" in validation_result:
             valid_keys.append(key)
             logger.info(t('valid_key', key))
+            
+            # 对有效密钥进行付费模型验证
+            logger.info(f"🔍 正在验证付费模型: {key[:20]}...")
+            paid_validation_result = validate_paid_model_key(key)
+            if paid_validation_result and "ok" in paid_validation_result:
+                paid_keys.append(key)
+                logger.info(f"💎 付费密钥验证成功: {key[:20]}... (支持{Config.HAJIMI_PAID_MODEL})")
+            else:
+                logger.info(f"ℹ️ 付费模型验证失败: {key[:20]}... ({paid_validation_result})")
+                
         elif validation_result == "rate_limited":
             rate_limited_keys.append(key)
             logger.warning(t('rate_limited_key', key, validation_result))
@@ -203,6 +214,20 @@ def process_item(item: Dict[str, Any]) -> tuple:
     if rate_limited_keys:
         file_manager.save_rate_limited_keys(repo_name, file_path, file_url, rate_limited_keys)
         logger.info(t('saved_rate_limited_keys', len(rate_limited_keys)))
+
+    if paid_keys:
+        file_manager.save_paid_keys(repo_name, file_path, file_url, paid_keys)
+        logger.info(f"💎 已保存付费密钥: {len(paid_keys)} 个")
+        
+        # 根据配置决定是否上传付费密钥到GPT Load Balancer
+        if Config.parse_bool(Config.GPT_LOAD_PAID_SYNC_ENABLED):
+            try:
+                sync_utils.add_paid_keys_to_queue(paid_keys)
+                logger.info(f"💎 已添加 {len(paid_keys)} 个付费密钥到上传队列")
+            except Exception as e:
+                logger.error(f"💎 添加付费密钥到队列时出错: {e}")
+        else:
+            logger.info(f"💎 付费密钥上传功能已关闭，仅本地保存 {len(paid_keys)} 个密钥")
 
     return len(valid_keys), len(rate_limited_keys)
 
@@ -239,6 +264,53 @@ def validate_gemini_key(api_key: str) -> Union[bool, str]:
             return "rate_limited:429"
         elif "403" in str(e) or "SERVICE_DISABLED" in str(e) or "API has not been used" in str(e):
             return "disabled"
+        else:
+            return f"error:{e.__class__.__name__}"
+
+
+def validate_paid_model_key(api_key: str) -> Union[bool, str]:
+    """
+    验证密钥是否支持付费模型
+    
+    Args:
+        api_key: Gemini API密钥
+        
+    Returns:
+        "ok" 表示付费模型可用，其他字符串表示验证失败的原因
+    """
+    try:
+        time.sleep(random.uniform(0.5, 1.5))
+
+        # 获取随机代理配置
+        proxy_config = Config.get_random_proxy()
+        
+        client_options = {
+            "api_endpoint": "generativelanguage.googleapis.com"
+        }
+        
+        # 如果有代理配置，添加到client_options中
+        if proxy_config:
+            os.environ['grpc_proxy'] = proxy_config.get('http')
+
+        genai.configure(
+            api_key=api_key,
+            client_options=client_options,
+        )
+
+        model = genai.GenerativeModel(Config.HAJIMI_PAID_MODEL)
+        response = model.generate_content("hi")
+        return "ok"
+    except (google_exceptions.PermissionDenied, google_exceptions.Unauthenticated) as e:
+        return "not_authorized_for_paid"
+    except google_exceptions.TooManyRequests as e:
+        return "rate_limited"
+    except Exception as e:
+        if "429" in str(e) or "rate limit" in str(e).lower() or "quota" in str(e).lower():
+            return "rate_limited"
+        elif "403" in str(e) or "SERVICE_DISABLED" in str(e) or "API has not been used" in str(e):
+            return "disabled"
+        elif "not found" in str(e).lower() or "404" in str(e):
+            return "model_not_found"
         else:
             return f"error:{e.__class__.__name__}"
 
@@ -281,7 +353,10 @@ def main():
     # 显示队列状态
     balancer_queue_count = len(checkpoint.wait_send_balancer)
     gpt_load_queue_count = len(checkpoint.wait_send_gpt_load)
+    gpt_load_paid_queue_count = len(checkpoint.wait_send_gpt_load_paid)
     logger.info(t('queue_status', balancer_queue_count, gpt_load_queue_count))
+    if gpt_load_paid_queue_count > 0:
+        logger.info(f"💎 付费密钥队列: {gpt_load_paid_queue_count} 个待发送")
 
     # 3. 显示系统信息
     search_queries = file_manager.get_search_queries()

@@ -35,6 +35,11 @@ class SyncUtils:
         self.gpt_load_sync_enabled = Config.parse_bool(Config.GPT_LOAD_SYNC_ENABLED)
         self.gpt_load_enabled = bool(self.gpt_load_url and self.gpt_load_auth and self.gpt_load_group_names and self.gpt_load_sync_enabled)
 
+        # GPT Load Balancer - Paid Keys 配置
+        self.gpt_load_paid_group_name = Config.GPT_LOAD_PAID_GROUP_NAME.strip() if Config.GPT_LOAD_PAID_GROUP_NAME else ""
+        self.gpt_load_paid_sync_enabled = Config.parse_bool(Config.GPT_LOAD_PAID_SYNC_ENABLED)
+        self.gpt_load_paid_enabled = bool(self.gpt_load_url and self.gpt_load_auth and self.gpt_load_paid_group_name and self.gpt_load_paid_sync_enabled)
+
         # 创建线程池用于异步执行
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="SyncUtils")
         self.saving_checkpoint = False
@@ -58,6 +63,11 @@ class SyncUtils:
             logger.warning(t('gpt_load_sync_disabled'))
         else:
             logger.info(t('gpt_load_enabled_url', self.gpt_load_url, ', '.join(self.gpt_load_group_names)))
+
+        if not self.gpt_load_paid_enabled:
+            logger.warning("💎 付费密钥上传功能未启用")
+        else:
+            logger.info(f"💎 付费密钥上传已启用: {self.gpt_load_url} -> 分组: {self.gpt_load_paid_group_name}")
 
         # 启动周期性发送线程
         self._start_batch_sender()
@@ -99,6 +109,37 @@ class SyncUtils:
                 logger.info(t('added_to_gpt_load_queue', added_gpt_count, new_gpt_count))
             else:
                 logger.info(t('gpt_load_disabled_skipping', len(keys)))
+
+            file_manager.save_checkpoint(checkpoint)
+        finally:
+            self.saving_checkpoint = False  # Release the lock
+
+    def add_paid_keys_to_queue(self, keys: List[str]):
+        """
+        将付费密钥添加到GPT Load Balancer的独立分组队列
+        
+        Args:
+            keys: 付费API keys列表
+        """
+        if not keys:
+            return
+
+        # Acquire lock for checkpoint saving
+        while self.saving_checkpoint:
+            logger.info(f"💎 等待checkpoint保存完成... (付费密钥: {len(keys)} 个)")
+            time.sleep(0.5)
+
+        self.saving_checkpoint = True  # Acquire the lock
+        try:
+            # GPT Load Balancer - Paid Keys
+            if self.gpt_load_paid_enabled:
+                initial_paid_count = len(checkpoint.wait_send_gpt_load_paid)
+                checkpoint.wait_send_gpt_load_paid.update(keys)
+                new_paid_count = len(checkpoint.wait_send_gpt_load_paid)
+                added_paid_count = new_paid_count - initial_paid_count
+                logger.info(f"💎 已添加 {added_paid_count} 个付费密钥到队列 (总计: {new_paid_count})")
+            else:
+                logger.info(f"💎 付费密钥上传功能已关闭，跳过 {len(keys)} 个付费密钥")
 
             file_manager.save_checkpoint(checkpoint)
         finally:
@@ -290,6 +331,98 @@ class SyncUtils:
             logger.error(t('failed_get_group_id', group_name, str(e)))
             return None
 
+    def _send_gpt_load_paid_worker(self, keys: List[str]) -> str:
+        """
+        实际执行发送付费密钥到GPT load balancer的工作函数（在后台线程中执行）
+        
+        Args:
+            keys: 付费API keys列表
+            
+        Returns:
+            str: "ok" if success, otherwise an error code string.
+        """
+        try:
+            logger.info(f"💎 正在发送 {len(keys)} 个付费密钥到GPT Load Balancer分组: {self.gpt_load_paid_group_name}")
+
+            # 1. 获取group ID (使用缓存)
+            group_id = self._get_gpt_load_group_id(self.gpt_load_paid_group_name)
+            
+            if group_id is None:
+                logger.error(f"💎 获取付费分组ID失败: {self.gpt_load_paid_group_name}")
+                return "failed_get_group_id"
+
+            # 2. 发送keys到指定group
+            add_keys_url = f"{self.gpt_load_url}/api/keys/add-async"
+            keys_text = ",".join(keys)
+            
+            add_headers = {
+                'Authorization': f'Bearer {self.gpt_load_auth}',
+                'Content-Type': 'application/json',
+                'User-Agent': 'HajimiKing/1.0'
+            }
+
+            payload = {
+                "group_id": group_id,
+                "keys_text": keys_text
+            }
+
+            logger.info(f"💎 添加 {len(keys)} 个付费密钥到分组 [{self.gpt_load_paid_group_name}] (ID: {group_id})")
+
+            # 发送添加keys请求
+            add_response = requests.post(
+                add_keys_url,
+                headers=add_headers,
+                json=payload,
+                timeout=60
+            )
+
+            if add_response.status_code != 200:
+                logger.error(f"💎 添加付费密钥失败: HTTP {add_response.status_code} - {add_response.text}")
+                return "add_keys_failed"
+
+            # 解析添加keys响应
+            add_data = add_response.json()
+            
+            if add_data.get('code') != 0:
+                logger.error(f"💎 添加付费密钥API错误: {add_data.get('message', 'Unknown error')}")
+                return "add_keys_api_error"
+
+            # 检查任务状态
+            task_data = add_data.get('data', {})
+            task_type = task_data.get('task_type')
+            is_running = task_data.get('is_running')
+            total = task_data.get('total', 0)
+
+            logger.info(f"💎 付费密钥任务已启动 [{self.gpt_load_paid_group_name}]")
+            logger.info(f"💎 任务类型: {task_type}, 运行中: {is_running}, 总数: {total}")
+            
+            # 保存发送结果日志
+            send_result = {key: "ok" for key in keys}
+            file_manager.save_keys_send_result(keys, send_result)
+            
+            return "ok"
+
+        except requests.exceptions.Timeout:
+            logger.error("💎 请求超时 - GPT Load Balancer (付费密钥)")
+            send_result = {key: "timeout" for key in keys}
+            file_manager.save_keys_send_result(keys, send_result)
+            return "timeout"
+        except requests.exceptions.ConnectionError:
+            logger.error("💎 连接失败 - GPT Load Balancer (付费密钥)")
+            send_result = {key: "connection_error" for key in keys}
+            file_manager.save_keys_send_result(keys, send_result)
+            return "connection_error"
+        except json.JSONDecodeError as e:
+            logger.error(f"💎 JSON解析错误 - GPT Load Balancer (付费密钥): {str(e)}")
+            send_result = {key: "json_decode_error" for key in keys}
+            file_manager.save_keys_send_result(keys, send_result)
+            return "json_decode_error"
+        except Exception as e:
+            logger.error(f"💎 发送付费密钥失败: {str(e)}", exc_info=True)
+            send_result = {key: "exception" for key in keys}
+            file_manager.save_keys_send_result(keys, send_result)
+            return "exception"
+
     def _send_gpt_load_worker(self, keys: List[str]) -> str:
         """
         实际执行发送到GPT load balancer的工作函数（在后台线程中执行）
@@ -437,6 +570,21 @@ class SyncUtils:
         try:
             # 加载checkpoint
             logger.info(t('starting_batch_send', len(checkpoint.wait_send_balancer), len(checkpoint.wait_send_gpt_load)))
+            
+            # 发送付费密钥队列
+            if checkpoint.wait_send_gpt_load_paid and self.gpt_load_paid_enabled:
+                paid_keys = list(checkpoint.wait_send_gpt_load_paid)
+                logger.info(f"💎 处理付费密钥队列: {len(paid_keys)} 个")
+
+                result_code = self._send_gpt_load_paid_worker(paid_keys)
+
+                if result_code == 'ok':
+                    # 清空队列
+                    checkpoint.wait_send_gpt_load_paid.clear()
+                    logger.info(f"💎 付费密钥队列已清空: {len(paid_keys)} 个密钥已发送")
+                else:
+                    logger.error(f"💎 付费密钥队列处理失败: {result_code}")
+            
             # 发送gemini balancer队列
             if checkpoint.wait_send_balancer and self.balancer_enabled:
                 balancer_keys = list(checkpoint.wait_send_balancer)

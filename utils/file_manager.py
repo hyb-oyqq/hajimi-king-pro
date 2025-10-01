@@ -16,6 +16,7 @@ class Checkpoint:
     processed_queries: Set[str] = field(default_factory=set)
     wait_send_balancer: Set[str] = field(default_factory=set)
     wait_send_gpt_load: Set[str] = field(default_factory=set)
+    wait_send_gpt_load_paid: Set[str] = field(default_factory=set)
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典格式，但不包含scanned_shas（单独存储）"""
@@ -23,7 +24,8 @@ class Checkpoint:
             "last_scan_time": self.last_scan_time,
             "processed_queries": list(self.processed_queries),
             "wait_send_balancer": list(self.wait_send_balancer),
-            "wait_send_gpt_load": list(self.wait_send_gpt_load)
+            "wait_send_gpt_load": list(self.wait_send_gpt_load),
+            "wait_send_gpt_load_paid": list(self.wait_send_gpt_load_paid)
         }
     
     @classmethod
@@ -34,7 +36,8 @@ class Checkpoint:
             scanned_shas=set(),  # 将通过FileManager单独加载
             processed_queries=set(data.get("processed_queries", [])),
             wait_send_balancer=set(data.get("wait_send_balancer", [])),
-            wait_send_gpt_load=set(data.get("wait_send_gpt_load", []))
+            wait_send_gpt_load=set(data.get("wait_send_gpt_load", [])),
+            wait_send_gpt_load_paid=set(data.get("wait_send_gpt_load_paid", []))
         )
 
     def add_scanned_sha(self, sha: str) -> None:
@@ -73,6 +76,8 @@ class FileManager:
         self._rate_limited_detail_filename: Optional[str] = None
         self._keys_send_filename: Optional[str] = None
         self._keys_send_detail_filename: Optional[str] = None
+        self._paid_keys_filename: Optional[str] = None
+        self._paid_keys_detail_filename: Optional[str] = None
 
         # 3. 创建数据目录
         if not os.path.exists(self.data_dir):
@@ -106,6 +111,10 @@ class FileManager:
             self.data_dir,
             f"{Config.KEYS_SEND_PREFIX}{start_time.strftime('%Y%m%d')}.txt"
         )
+        self._paid_keys_filename = os.path.join(
+            self.data_dir,
+            f"{Config.PAID_KEY_PREFIX}{start_time.strftime('%Y%m%d')}.txt"
+        )
         self._detail_log_filename = os.path.join(
             self.data_dir,
             f"{ Config.VALID_KEY_DETAIL_PREFIX.rstrip('_')}{start_time.strftime('%Y%m%d')}.log"
@@ -118,10 +127,14 @@ class FileManager:
             self.data_dir,
             f"{Config.KEYS_SEND_DETAIL_PREFIX}{start_time.strftime('%Y%m%d')}.log"
         )
+        self._paid_keys_detail_filename = os.path.join(
+            self.data_dir,
+            f"{Config.PAID_KEY_DETAIL_PREFIX}{start_time.strftime('%Y%m%d')}.log"
+        )
 
         # 创建文件（如果不存在），先确保父目录存在
         for filename in [self._detail_log_filename, self._keys_valid_filename, self._rate_limited_filename, self._rate_limited_detail_filename, self._keys_send_filename,
-                         self._keys_send_detail_filename]:
+                         self._keys_send_detail_filename, self._paid_keys_filename, self._paid_keys_detail_filename]:
             if not os.path.exists(filename):
                 # 确保父目录存在（类似 mkdir -p）
                 parent_dir = os.path.dirname(filename)
@@ -134,9 +147,11 @@ class FileManager:
         logger.info(f"Initialized keys valid filename: {self._keys_valid_filename}")
         logger.info(f"Initialized rate limited filename: {self._rate_limited_filename}")
         logger.info(f"Initialized keys send filename: {self._keys_send_filename}")
+        logger.info(f"Initialized paid keys filename: {self._paid_keys_filename}")
         logger.info(f"Initialized detail log filename: {self._detail_log_filename}")
         logger.info(f"Initialized rate limited detail filename: {self._rate_limited_detail_filename}")
         logger.info(f"Initialized keys send detail filename: {self._keys_send_detail_filename}")
+        logger.info(f"Initialized paid keys detail filename: {self._paid_keys_detail_filename}")
 
         logger.info("✅ FileManager initialization complete")
 
@@ -328,6 +343,26 @@ class FileManager:
                     result = send_result.get(key, "unknown")
                     f.write(f"{key} | {result}\n")
 
+    def save_paid_keys(self, repo_name: str, file_path: str, file_url: str, paid_keys: List[str]) -> None:
+        """保存付费层级的API密钥"""
+        if not paid_keys:
+            return
+
+        # 保存详细信息到详细日志文件
+        if self._paid_keys_detail_filename:
+            with open(self._paid_keys_detail_filename, "a", encoding="utf-8") as f:
+                f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"URL: {file_url}\n")
+                for key in paid_keys:
+                    f.write(f"KEY: {key}\n")
+                f.write("-" * 80 + "\n")
+
+        # 保存到paid_keys文件
+        if self._paid_keys_filename:
+            with open(self._paid_keys_filename, "a", encoding="utf-8") as f:
+                for key in paid_keys:
+                    f.write(f"{key}\n")
+
     def append_scanned_sha(self, sha: str) -> None:
         """追加单个SHA到文件中"""
         if not sha:
@@ -422,6 +457,30 @@ class FileManager:
                 self._keys_send_detail_filename = new_filename
                 self._ensure_file_exists(self._keys_send_detail_filename)
 
+        # 更新paid_keys文件名
+        if self._paid_keys_filename:
+            basename = os.path.basename(self._paid_keys_filename)
+            if self._need_filename_update(basename, Config.PAID_KEY_PREFIX, current_date_str, current_hour_str):
+                new_filename = os.path.join(
+                    self.data_dir,
+                    f"{Config.PAID_KEY_PREFIX}{current_time.strftime('%Y%m%d')}.txt"
+                )
+                logger.info(f"📅 Date changed, creating new paid keys file: {os.path.basename(new_filename)}")
+                self._paid_keys_filename = new_filename
+                self._ensure_file_exists(self._paid_keys_filename)
+
+        # 更新paid_keys_detail文件名（按日期分割）
+        if self._paid_keys_detail_filename:
+            basename = os.path.basename(self._paid_keys_detail_filename)
+            if self._need_daily_filename_update(basename, Config.PAID_KEY_DETAIL_PREFIX, current_date_str):
+                new_filename = os.path.join(
+                    self.data_dir,
+                    f"{Config.PAID_KEY_DETAIL_PREFIX}{current_date_str}.log"
+                )
+                logger.info(f"📅 Date changed, creating new paid keys detail log: {os.path.basename(new_filename)}")
+                self._paid_keys_detail_filename = new_filename
+                self._ensure_file_exists(self._paid_keys_detail_filename)
+
 
 
 
@@ -448,6 +507,14 @@ class FileManager:
     @property
     def keys_send_detail_filename(self) -> Optional[str]:
         return self._keys_send_detail_filename
+
+    @property
+    def paid_keys_filename(self) -> Optional[str]:
+        return self._paid_keys_filename
+
+    @property
+    def paid_keys_detail_filename(self) -> Optional[str]:
+        return self._paid_keys_detail_filename
 
     # 向后兼容的属性名
     @property
