@@ -7,12 +7,14 @@ import traceback
 from datetime import datetime, timedelta
 from typing import Dict, List, Union, Any
 
+# 添加项目根目录到模块搜索路径
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
 
 from common.Logger import logger
-
-sys.path.append('../')
 from common.config import Config
 from utils.github_client import GitHubClient
 from utils.file_manager import file_manager, Checkpoint, checkpoint
