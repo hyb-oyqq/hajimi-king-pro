@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  hajimi-king:
-    image: hajimi-king:0.0.1
-    container_name: hajimi-king
+  hajimi-king-pro:
+    image: hajimi-king-pro:0.0.1
+    container_name: hajimi-king-pro
     restart: unless-stopped
     network_mode: host
     # 环境变量

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Hajimi King - Deployment Script
-# 用于在外部目录独立部署hajimi-king项目
+# Hajimi King Pro - Deployment Script
+# 用于在外部目录独立部署hajimi-king-Pro项目
 
 set -e  # 遇到错误时停止执行
 
@@ -29,15 +29,15 @@ log_error() {
 }
 
 # 项目配置
-PROJECT_NAME="hajimi-king"
+PROJECT_NAME="hajimi-king-pro"
 IMAGE_TAG="0.0.1"
 IMAGE_NAME="${PROJECT_NAME}:${IMAGE_TAG}"
 COMPOSE_FILE="docker-compose.yml"
 
 # 获取脚本所在目录
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-# hajimi-king源码目录（脚本所在目录的hajimi-king子目录）
-SOURCE_DIR="${SCRIPT_DIR}/hajimi-king"
+# hajimi-king-pro源码目录（脚本所在目录的hajimi-king-pro子目录）
+SOURCE_DIR="${SCRIPT_DIR}/hajimi-king-pro"
 
 # 当前工作目录（部署目录）
 DEPLOY_DIR="$(pwd)"
@@ -45,7 +45,7 @@ DEPLOY_DIR="$(pwd)"
 # 打印横幅
 print_banner() {
     echo "=================================================="
-    echo "🚀 HAJIMI KING - DEPLOYMENT SCRIPT"
+    echo "🚀 HAJIMI KING Pro - DEPLOYMENT SCRIPT"
     echo "=================================================="
     echo "🏷️  Image: ${IMAGE_NAME}"
     echo "📁 Source: ${SOURCE_DIR}"
@@ -67,9 +67,9 @@ check_source_directory() {
     done
     
     if [[ ${#missing_files[@]} -ne 0 ]]; then
-        log_error "hajimi-king源码目录缺少必要文件:"
+        log_error "hajimi-king-pro源码目录缺少必要文件:"
         printf '%s\n' "${missing_files[@]}" | sed 's/^/  - /'
-        log_error "请确保hajimi-king源码目录存在且包含所有必要文件"
+        log_error "请确保hajimi-king-pro源码目录存在且包含所有必要文件"
         log_error "预期源码路径: ${SOURCE_DIR}"
         exit 1
     fi

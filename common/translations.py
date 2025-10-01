@@ -17,7 +17,7 @@ class Translations:
     TRANSLATIONS = {
         'zh_cn': {
             # 系统启动相关
-            'system_starting': '🚀 HAJIMI KING 启动中',
+            'system_starting': '🚀 HAJIMI KING Pro 启动中',
             'started_at': '⏰ 启动时间: {}',
             'config_check_failed': '❌ 配置检查失败。退出中...',
             'filemanager_check_failed': '❌ 文件管理器检查失败。退出中...',
@@ -164,7 +164,7 @@ class Translations:
         },
         'en': {
             # System startup
-            'system_starting': '🚀 HAJIMI KING STARTING',
+            'system_starting': '🚀 HAJIMI KING Pro STARTING',
             'started_at': '⏰ Started at: {}',
             'config_check_failed': '❌ Config check failed. Exiting...',
             'filemanager_check_failed': '❌ FileManager check failed. Exiting...',

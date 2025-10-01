@@ -54,7 +54,7 @@ pip install uv
 ```bash
 # 克隆项目
 git clone <repository-url>
-cd hajimi-king
+cd hajimi-king-pro
 
 # 复制配置文件
 cp env.example .env
@@ -111,7 +111,7 @@ Ctrl + C
 ```yaml
 version: '3.8'
 services:
-  hajimi-king:
+  hajimi-king-pro:
     image: ghcr.io/hyb-oyqq/hajimi-king-pro:latest
     container_name: hajimi-king-pro
     restart: unless-stopped
@@ -131,7 +131,7 @@ services:
 ```yaml
 version: '3.8'
 services:
-  hajimi-king:
+  hajimi-king-pro:
     image: ghcr.io/hyb-oyqq/hajimi-king-pro:latest
     container_name: hajimi-king-pro
     restart: unless-stopped
@@ -313,5 +313,5 @@ AizaSy in:file filename:.env
 - ✅ 不要将真实的API密钥提交到版本控制 🙈
 - ✅ 定期检查和清理发现的密钥文件 🧹
 
-💖 **享受使用 Hajimi King 的快乐时光！** 🎉✨🎊
+💖 **享受使用 Hajimi King Pro的快乐时光！** 🎉✨🎊
 

@@ -253,7 +253,7 @@ wheels = [
 ]
 
 [[package]]
-name = "hajimi-king"
+name = "hajimi-king-pro"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
