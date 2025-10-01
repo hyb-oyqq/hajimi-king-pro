@@ -196,6 +196,11 @@ def process_item(item: Dict[str, Any]) -> tuple:
         elif "rate_limited" in validation_result:
             rate_limited_keys.append(key)
             logger.warning(t('rate_limited_key', key, validation_result))
+            
+            # 根据配置决定是否将429密钥视为有效密钥
+            if Config.parse_bool(Config.TREAT_RATE_LIMITED_AS_VALID):
+                valid_keys.append(key)
+                logger.info(f"⚠️➡️✅ 429密钥视为有效: {key[:20]}... (TREAT_RATE_LIMITED_AS_VALID=true)")
         else:
             logger.info(t('invalid_key', key, validation_result))
 

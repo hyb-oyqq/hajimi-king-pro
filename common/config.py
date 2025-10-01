@@ -41,6 +41,9 @@ class Config:
     # GPT Load Balancer - Paid Keys Configuration
     GPT_LOAD_PAID_SYNC_ENABLED = os.getenv("GPT_LOAD_PAID_SYNC_ENABLED", "false")
     GPT_LOAD_PAID_GROUP_NAME = os.getenv('GPT_LOAD_PAID_GROUP_NAME', '')
+    
+    # 429限速密钥处理策略
+    TREAT_RATE_LIMITED_AS_VALID = os.getenv("TREAT_RATE_LIMITED_AS_VALID", "false")
 
     # 文件前缀配置
     VALID_KEY_PREFIX = os.getenv("VALID_KEY_PREFIX", "keys/keys_valid_")
@@ -183,6 +186,7 @@ logger.info(f"GPT_LOAD_AUTH: {'Configured' if Config.GPT_LOAD_AUTH else 'Not con
 logger.info(f"GPT_LOAD_GROUP_NAME: {Config.GPT_LOAD_GROUP_NAME or 'Not configured'}")
 logger.info(f"GPT_LOAD_PAID_SYNC_ENABLED: {Config.parse_bool(Config.GPT_LOAD_PAID_SYNC_ENABLED)}")
 logger.info(f"GPT_LOAD_PAID_GROUP_NAME: {Config.GPT_LOAD_PAID_GROUP_NAME or 'Not configured'}")
+logger.info(f"TREAT_RATE_LIMITED_AS_VALID: {Config.parse_bool(Config.TREAT_RATE_LIMITED_AS_VALID)}")
 logger.info(f"VALID_KEY_PREFIX: {Config.VALID_KEY_PREFIX}")
 logger.info(f"RATE_LIMITED_KEY_PREFIX: {Config.RATE_LIMITED_KEY_PREFIX}")
 logger.info(f"KEYS_SEND_PREFIX: {Config.KEYS_SEND_PREFIX}")

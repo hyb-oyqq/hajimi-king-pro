@@ -1,6 +1,16 @@
-# 🎪 Hajimi King 🏆
+# 🎪 Hajimi King Pro 🏆
 
-人人都是哈基米大王  👑  
+人人都是【超级】哈基米大王  👑  
+
+## 🙏 特别感谢
+
+本项目基于 [@GakkiNoOne](https://github.com/GakkiNoOne) 的原始项目进行开发和增强。
+
+**原仓库地址**: [https://github.com/GakkiNoOne/hajimi-king](https://github.com/GakkiNoOne/hajimi-king)
+
+感谢原作者的开源贡献！🎉
+
+---
 
 注意： 本项目正处于beta期间，所以功能、结构、接口等等都有可能变化，不保证稳定性，请自行承担风险。
 
@@ -202,6 +212,7 @@ PROXY=http://localhost:1080
 
 | 变量名                              | 默认值                                        | 说明 |
 |----------------------------------|----------------------------------------------|------|
+| `TREAT_RATE_LIMITED_AS_VALID`    | `false`                                      | 是否将429限速密钥同步到外部系统（true=同步，false=仅本地保存）⏰ |
 | `HAJIMI_PAID_MODEL`              | `gemini-2.5-pro-preview-03-25`       | 用于验证付费密钥的模型 💎 |
 | `VALID_KEY_PREFIX`               | `keys/keys_valid_`                           | 有效密钥文件名前缀 🗝️ |
 | `RATE_LIMITED_KEY_PREFIX`        | `keys/key_429_`                              | 频率限制密钥文件名前缀 ⏰ |
@@ -246,6 +257,7 @@ GPT_LOAD_PAID_SYNC_ENABLED=false
 GPT_LOAD_PAID_GROUP_NAME=paid_group
 
 # 高级配置（建议保持默认）
+TREAT_RATE_LIMITED_AS_VALID=false
 HAJIMI_PAID_MODEL=gemini-2.0-flash-thinking-exp-01-21
 VALID_KEY_PREFIX=keys/keys_valid_
 RATE_LIMITED_KEY_PREFIX=keys/key_429_
