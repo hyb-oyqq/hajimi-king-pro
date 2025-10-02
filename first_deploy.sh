@@ -37,7 +37,7 @@ COMPOSE_FILE="docker-compose.yml"
 # 获取脚本所在目录
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # hajimi-king-pro源码目录（脚本所在目录的hajimi-king-pro子目录）
-SOURCE_DIR="${SCRIPT_DIR}/hajimi-king-pro"
+SOURCE_DIR="${SCRIPT_DIR}/hajimi-king"
 
 # 当前工作目录（部署目录）
 DEPLOY_DIR="$(pwd)"

@@ -8,4 +8,6 @@ dependencies = [
     "google-generativeai>=0.8.5",
     "python-dotenv>=1.1.1",
     "requests>=2.32.4",
+    "psycopg2-binary>=2.9.9",
+    "pymysql>=1.1.0",
 ]

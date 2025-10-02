@@ -7,6 +7,11 @@ from typing import Dict, List, Optional, Any, Set
 
 from common.Logger import logger
 from common.config import Config
+from common.translations import get_translator
+from utils.db_manager import create_db_manager, DatabaseManager
+
+# 获取翻译函数
+t = get_translator().t
 
 
 @dataclass
@@ -156,6 +161,24 @@ class FileManager:
         logger.info(f"Initialized keys send detail filename: {self._keys_send_detail_filename}")
         logger.info(f"Initialized paid keys detail filename: {self._paid_keys_detail_filename}")
 
+        # 6. 初始化数据库管理器（如果使用SQL存储）
+        self.db_manager: Optional[DatabaseManager] = None
+        if Config.STORAGE_TYPE == 'sql':
+            try:
+                db_config = Config.get_db_config()
+                self.db_manager = create_db_manager(Config.STORAGE_TYPE, Config.DB_TYPE, db_config)
+                
+                if self.db_manager:
+                    self.db_manager.connect()
+                    self.db_manager.init_tables()
+                    logger.info(t('db_manager_initialized', Config.DB_TYPE))
+                else:
+                    logger.warning(t('db_manager_create_failed', Config.DB_TYPE))
+            except Exception as e:
+                logger.error(t('db_manager_init_failed', e))
+                traceback.print_exc()
+                self.db_manager = None
+
         logger.info("✅ FileManager initialization complete")
 
     def check(self) -> bool:
@@ -280,42 +303,65 @@ class FileManager:
 
     def save_valid_keys(self, repo_name: str, file_path: str, file_url: str, valid_keys: List[str]) -> None:
         """保存有效的API密钥"""
-        if not valid_keys or not self._detail_log_filename:
+        if not valid_keys:
             return
 
-        # 保存到详细日志文件
-        with open(self._detail_log_filename, "a", encoding="utf-8") as f:
-            f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"URL: {file_url}\n")
-            for key in valid_keys:
-                f.write(f"KEY: {key}\n")
-            f.write("-" * 80 + "\n")
+        # 如果使用数据库存储
+        if Config.STORAGE_TYPE == 'sql' and self.db_manager:
+            metadata = {
+                'repo_name': repo_name,
+                'file_path': file_path,
+                'file_url': file_url
+            }
+            self.db_manager.save_keys(valid_keys, 'valid', metadata)
+        
+        # 如果使用文本文件存储或作为备份
+        if Config.STORAGE_TYPE == 'text' or not self.db_manager:
+            if self._detail_log_filename:
+                # 保存到详细日志文件
+                with open(self._detail_log_filename, "a", encoding="utf-8") as f:
+                    f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"URL: {file_url}\n")
+                    for key in valid_keys:
+                        f.write(f"KEY: {key}\n")
+                    f.write("-" * 80 + "\n")
 
-        # 保存到keys_valid文件
-        if self._keys_valid_filename:
-            with open(self._keys_valid_filename, "a", encoding="utf-8") as f:
-                for key in valid_keys:
-                    f.write(f"{key}\n")
+            # 保存到keys_valid文件
+            if self._keys_valid_filename:
+                with open(self._keys_valid_filename, "a", encoding="utf-8") as f:
+                    for key in valid_keys:
+                        f.write(f"{key}\n")
 
     def save_rate_limited_keys(self, repo_name: str, file_path: str, file_url: str, rate_limited_keys: List[str]) -> None:
         """保存被限流的API密钥"""
         if not rate_limited_keys:
             return
 
-        # 保存详细信息到详细日志文件（新格式）
-        if self._rate_limited_detail_filename:
-            with open(self._rate_limited_detail_filename, "a", encoding="utf-8") as f:
-                f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write(f"URL: {file_url}\n")
-                for key in rate_limited_keys:
-                    f.write(f"{key}\n")
-                f.write("-" * 80 + "\n")
+        # 如果使用数据库存储
+        if Config.STORAGE_TYPE == 'sql' and self.db_manager:
+            metadata = {
+                'repo_name': repo_name,
+                'file_path': file_path,
+                'file_url': file_url
+            }
+            self.db_manager.save_keys(rate_limited_keys, 'rate_limited', metadata)
+        
+        # 如果使用文本文件存储或作为备份
+        if Config.STORAGE_TYPE == 'text' or not self.db_manager:
+            # 保存详细信息到详细日志文件（新格式）
+            if self._rate_limited_detail_filename:
+                with open(self._rate_limited_detail_filename, "a", encoding="utf-8") as f:
+                    f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"URL: {file_url}\n")
+                    for key in rate_limited_keys:
+                        f.write(f"{key}\n")
+                    f.write("-" * 80 + "\n")
 
-        # 保存纯密钥到原有文件（只保存key）
-        if self._rate_limited_filename:
-            with open(self._rate_limited_filename, "a", encoding="utf-8") as f:
-                for key in rate_limited_keys:
-                    f.write(f"{key}\n")
+            # 保存纯密钥到原有文件（只保存key）
+            if self._rate_limited_filename:
+                with open(self._rate_limited_filename, "a", encoding="utf-8") as f:
+                    for key in rate_limited_keys:
+                        f.write(f"{key}\n")
 
     def save_keys_send_result(self, keys: List[str], send_result: dict) -> None:
         """
@@ -351,20 +397,31 @@ class FileManager:
         if not paid_keys:
             return
 
-        # 保存详细信息到详细日志文件
-        if self._paid_keys_detail_filename:
-            with open(self._paid_keys_detail_filename, "a", encoding="utf-8") as f:
-                f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write(f"URL: {file_url}\n")
-                for key in paid_keys:
-                    f.write(f"KEY: {key}\n")
-                f.write("-" * 80 + "\n")
+        # 如果使用数据库存储
+        if Config.STORAGE_TYPE == 'sql' and self.db_manager:
+            metadata = {
+                'repo_name': repo_name,
+                'file_path': file_path,
+                'file_url': file_url
+            }
+            self.db_manager.save_keys(paid_keys, 'paid', metadata)
+        
+        # 如果使用文本文件存储或作为备份
+        if Config.STORAGE_TYPE == 'text' or not self.db_manager:
+            # 保存详细信息到详细日志文件
+            if self._paid_keys_detail_filename:
+                with open(self._paid_keys_detail_filename, "a", encoding="utf-8") as f:
+                    f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"URL: {file_url}\n")
+                    for key in paid_keys:
+                        f.write(f"KEY: {key}\n")
+                    f.write("-" * 80 + "\n")
 
-        # 保存到paid_keys文件
-        if self._paid_keys_filename:
-            with open(self._paid_keys_filename, "a", encoding="utf-8") as f:
-                for key in paid_keys:
-                    f.write(f"{key}\n")
+            # 保存到paid_keys文件
+            if self._paid_keys_filename:
+                with open(self._paid_keys_filename, "a", encoding="utf-8") as f:
+                    for key in paid_keys:
+                        f.write(f"{key}\n")
 
     def append_scanned_sha(self, sha: str) -> None:
         """追加单个SHA到文件中"""

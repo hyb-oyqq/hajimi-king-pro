@@ -20,6 +20,7 @@ from common.translations import get_translator
 from utils.github_client import GitHubClient
 from utils.file_manager import file_manager, Checkpoint, checkpoint
 from utils.sync_utils import sync_utils
+from utils.migration import KeyMigration
 
 # 获取翻译函数
 t = get_translator().t
@@ -372,6 +373,21 @@ def main():
     if not Config.check():
         logger.info(t('config_check_failed'))
         sys.exit(1)
+    
+    # 1.5. 检查是否需要数据迁移（从文本文件迁移到数据库）
+    if Config.STORAGE_TYPE == 'sql' and file_manager.db_manager:
+        migration = KeyMigration(Config.DATA_PATH, file_manager.db_manager)
+        if migration.check_need_migration():
+            logger.info(t('migration_check_detected'))
+            if migration.migrate():
+                logger.info(t('migration_check_completed'))
+            else:
+                logger.error(t('migration_check_failed'))
+                logger.info(t('migration_check_hint'))
+                sys.exit(1)
+        else:
+            logger.info(t('migration_check_not_needed'))
+    
     # 2. 检查文件管理器
     if not file_manager.check():
         logger.error(t('filemanager_check_failed'))

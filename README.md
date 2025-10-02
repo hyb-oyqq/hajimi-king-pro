@@ -21,95 +21,19 @@
 3. **增量扫描** 📊 - 支持断点续传，避免重复扫描已处理的文件
 4. **智能过滤** 🚫 - 自动过滤文档、示例、测试文件，专注有效代码
 5. **外部同步** 🔄 - 支持向[Gemini-Balancer](https://github.com/snailyp/gemini-balance)和[GPT-Load](https://github.com/tbphp/gpt-load)同步发现的密钥
-6. **付费key检测**💰 - 检查到有效key时自动再次检查是否为付费key
+6. **付费key检测** 💰 - 检查到有效key时自动再次检查是否为付费key
+7. **数据库存储** 💾 - 支持SQLite/PostgreSQL/MySQL数据库存储，自动从文本文件迁移
 
 ### 🔮 待开发功能 (TODO)
 
-- [ ] **数据库支持保存key** 💾 - 支持将发现的API密钥持久化存储到数据库中
 - [ ] **API、可视化展示抓取的key列表** 📊 - 提供API接口和可视化界面获取已抓取的密钥列表
 - [ ] **多线程支持** 🛠️ - 支持多线程并发处理，提高处理效率
 
 
-## 📋 目录 🗂️
+## 📋 部署教程 🗂️
 
-- [本地部署](./wiki/%E6%9C%AC%E5%9C%B0%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B) 🏠
-- [Docker部署](#-docker部署) 🐳
-- [配置变量说明](#-配置变量说明) ⚙️
-
----
-
-## 🐳 Docker部署 🌊
-
-### 方式一：使用环境变量
-
-```yaml
-version: '3.8'
-services:
-  hajimi-king:
-    image: ghcr.io/hyb-oyqq/hajimi-king-pro:latest
-    container_name: hajimi-king-pro
-    restart: unless-stopped
-    environment:
-      # 必填：GitHub访问令牌
-      - GITHUB_TOKENS=ghp_your_token_here_1,ghp_your_token_here_2
-      # 可选配置
-      - HAJIMI_CHECK_MODEL=gemini-2.5-flash
-      - QUERIES_FILE=queries.txt
-    volumes:
-      - ./data:/app/data
-    working_dir: /app
-```
-
-### 方式二：使用.env文件
-
-```yaml
-version: '3.8'
-services:
-  hajimi-king:
-    image: ghcr.io/hyb-oyqq/hajimi-king-pro:latest
-    container_name: hajimi-king-pro
-    restart: unless-stopped
-    env_file:
-      - .env
-    volumes:
-      - ./data:/app/data
-    working_dir: /app
-```
-
-创建 `.env` 文件（参考 `env.example`）：
-```bash
-# 复制示例配置文件
-cp env.example .env
-# 编辑配置文件，填入你的GitHub Token
-```
-
-### 启动服务
-
-```bash
-# 创建数据目录和查询文件
-mkdir -p data
-echo "AIzaSy in:file" > data/queries.txt
-
-# 启动服务
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
-```
-
-### 代理配置
-
-强烈建议使用！GITHUB、GEMINI 访问长时间高频都会BAN IP
-
-如果需要使用代理访问GitHub或Gemini API，推荐使用本地WARP代理：
-
-> 🌐 **代理方案**：[warp-docker](https://github.com/cmj2002/warp-docker) - 本地WARP代理解决方案
-
-在 `.env` 文件中配置：
-```bash
-# 多个代理使用逗号分隔
-PROXY=http://localhost:1080
-```
+- [本地部署](https://github.com/hyb-oyqq/hajimi-king-pro/wiki/%E6%9C%AC%E5%9C%B0%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B) 🏠
+- [Docker部署](https://github.com/hyb-oyqq/hajimi-king-pro/wiki/Docker%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B) 🐳
 
 ---
 
@@ -117,107 +41,126 @@ PROXY=http://localhost:1080
 
 以下是所有可配置的环境变量，在 `.env` 文件中设置：
 
-### 🔴 必填配置 ⚠️
+### 1️⃣ 必填配置
 
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
 | `GITHUB_TOKENS` | GitHub API访问令牌，多个用逗号分隔 🎫 | `ghp_token1,ghp_token2` |
 
-### 🟡 重要配置（建议了解）🤓
+### 2️⃣ 基础配置
 
-| 变量名 | 默认值                | 说明                                              |
-|--------|--------------------|-------------------------------------------------|
-| `PROXY` | 空 | 代理服务器地址，支持多个（逗号分隔）和账密认证，格式：`http://user:pass@proxy:port` 🌐 |
-| `DATA_PATH` | `/app/data`        | 数据存储目录路径 📂                                     |
-| `DATE_RANGE_DAYS` | `730`              | 仓库年龄过滤（天数），只扫描指定天数内的仓库 📅                       |
-| `QUERIES_FILE` | `queries.txt`      | 搜索查询配置文件路径（表达式严重影响搜索的高效性) 🎯                    |
-| `HAJIMI_CHECK_MODEL` | `gemini-2.5-flash` | 用于验证key有效的模型 🤖                                 |
-| `GEMINI_BALANCER_SYNC_ENABLED` | `false` | 是否启用Gemini Balancer同步 🔗                        |
-| `GEMINI_BALANCER_URL` | 空 | Gemini Balancer服务地址（http://your-gemini-balancer.com） 🌐 |
-| `GEMINI_BALANCER_AUTH` | 空 | Gemini Balancer认证信息(密码） 🔐                      |
-| `GPT_LOAD_SYNC_ENABLED` | `false` | 是否启用GPT-load同步 🔗                      |
-| `GPT_LOAD_URL` | 空 | GPT Load 服务地址（http://your-gpt-load.com） 🌐      |
-| `GPT_LOAD_AUTH` | 空 | GPT Load 认证Token（页面密码） 🔐                       |
-| `GPT_LOAD_GROUP_NAME` | 空 | GPT Load 组名，多个用逗号分隔（group1,group2） 👥           |
-| `GPT_LOAD_PAID_SYNC_ENABLED` | `false` | 是否将付费密钥上传到独立分组 💎                         |
-| `GPT_LOAD_PAID_GROUP_NAME` | 空 | GPT Load 付费密钥的独立分组名（如：paid_group） 💎          |
-| `RATE_LIMITED_HANDLING` | `save_only` | 429密钥处理策略：`discard`/`save_only`/`sync`/`sync_separate` ⏰ |
-| `GPT_LOAD_RATE_LIMITED_GROUP_NAME` | 空 | 429密钥独立分组名（当`RATE_LIMITED_HANDLING=sync_separate`时使用） ⏰ |
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `DATA_PATH` | `/app/data` | 数据存储目录路径 📂 |
+| `QUERIES_FILE` | `queries.txt` | 搜索查询配置文件路径（相对于DATA_PATH）🎯 |
+| `LANGUAGE` | `zh_cn` | 界面语言：`zh_cn`=简体中文，`en`=英文 🌐 |
+| `PROXY` | 空 | 代理服务器，多个用逗号分隔<br>格式：`http://user:pass@host:port` 🌐 |
+| `DATE_RANGE_DAYS` | `730` | 仓库年龄过滤（天数），只扫描N天内有更新的仓库 📅 |
+| `FILE_PATH_BLACKLIST` | `readme,docs,...` | 文件路径黑名单，逗号分隔，跳过文档和示例文件 🚫 |
 
-#### 💡 关于 `RATE_LIMITED_HANDLING` 配置说明
+### 3️⃣ 存储配置
 
-此配置用于控制429限速密钥的处理策略，提供4种选项：
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `STORAGE_TYPE` | `sql` | 存储方式：`sql`=数据库（推荐），`text`=文本文件 💾 |
+| `DB_TYPE` | `sqlite` | 数据库类型：`sqlite`/`postgresql`/`mysql` 🗄️ |
 
-- **`discard`**：丢弃，视为无效密钥，不做任何保存或同步
-- **`save_only`**（默认）：仅保存到本地专用文件（`key_429_*.txt`），不同步到外部系统
-- **`sync`**：视为正常密钥，与有效密钥一起同步到正常分组
-- **`sync_separate`**：同步到独立的429专用分组（需配置`GPT_LOAD_RATE_LIMITED_GROUP_NAME`）
+**SQLite 配置**（推荐，无需额外安装）
 
-### 🟢 可选配置（不懂就别动）😅
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `SQLITE_DB_PATH` | `keys.db` | 数据库文件路径（相对于DATA_PATH）📁 |
 
-| 变量名                              | 默认值                                        | 说明 |
-|----------------------------------|----------------------------------------------|------|
-| `HAJIMI_PAID_MODEL`              | `gemini-2.5-pro-preview-03-25`       | 用于验证付费密钥的模型 💎 |
-| `VALID_KEY_PREFIX`               | `keys/keys_valid_`                           | 有效密钥文件名前缀 🗝️ |
-| `RATE_LIMITED_KEY_PREFIX`        | `keys/key_429_`                              | 频率限制密钥文件名前缀 ⏰ |
-| `KEYS_SEND_PREFIX`               | `keys/keys_send_`                            | 发送到外部应用的密钥文件名前缀 🚀 |
-| `PAID_KEY_PREFIX`                | `keys/keys_paid_`                            | 付费密钥文件名前缀 💎 |
-| `VALID_KEY_DETAIL_PREFIX`        | `logs/keys_valid_detail_`                    | 有效密钥详细日志文件名前缀 📝 |
-| `RATE_LIMITED_KEY_DETAIL_PREFIX` | `logs/key_429_detail_`                       | 频率限制详细日志文件名前缀 📊 |
-| `KEYS_SEND_DETAIL_PREFIX`        | `logs/keys_send_detail_`                     | 发送密钥详细日志文件名前缀 🚀 |
-| `PAID_KEY_DETAIL_PREFIX`         | `logs/keys_paid_detail_`                     | 付费密钥详细日志文件名前缀 💎 |
-| `SCANNED_SHAS_FILE`              | `scanned_shas.txt`                           | 已扫描文件SHA记录文件名 📋 |
-| `FILE_PATH_BLACKLIST`            | `readme,docs,doc/,.md,example,...`           | 文件路径黑名单，逗号分隔 🚫 |
-| `LANGUAGE`                       | `zh_cn`                                      | 语言配置（zh_cn=简体中文, en=英文） 🌐 |
+**PostgreSQL 配置**
 
-### 配置文件示例 💫
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `POSTGRESQL_HOST` | `localhost` | 数据库主机地址 🌐 |
+| `POSTGRESQL_PORT` | `5432` | 数据库端口 🔌 |
+| `POSTGRESQL_DATABASE` | `hajimi_keys` | 数据库名 📊 |
+| `POSTGRESQL_USER` | `postgres` | 用户名 👤 |
+| `POSTGRESQL_PASSWORD` | 空 | 密码 🔐 |
 
-完整的 `.env` 文件示例：
+**MySQL 配置**
 
-```bash
-# 必填配置
-GITHUB_TOKENS=ghp_your_token_here_1,ghp_your_token_here_2
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `MYSQL_HOST` | `localhost` | 数据库主机地址 🌐 |
+| `MYSQL_PORT` | `3306` | 数据库端口 🔌 |
+| `MYSQL_DATABASE` | `hajimi_keys` | 数据库名 📊 |
+| `MYSQL_USER` | `root` | 用户名 👤 |
+| `MYSQL_PASSWORD` | 空 | 密码 🔐 |
 
-# 重要配置（可选修改）
-DATA_PATH=/app/data
-DATE_RANGE_DAYS=730
-QUERIES_FILE=queries.txt
-HAJIMI_CHECK_MODEL=gemini-2.5-flash
-PROXY=
+> 💡 **数据迁移**：首次启用SQL存储时，系统会自动检测并迁移历史文本文件到数据库，完成后自动备份并删除原文件
 
-# Gemini Balancer同步配置
-GEMINI_BALANCER_SYNC_ENABLED=false
-GEMINI_BALANCER_URL=
-GEMINI_BALANCER_AUTH=
+### 4️⃣ 模型配置
 
-# GPT-load同步配置
-GPT_LOAD_SYNC_ENABLED=false
-GPT_LOAD_URL=
-GPT_LOAD_AUTH=
-GPT_LOAD_GROUP_NAME=group1,group2,group3
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `HAJIMI_CHECK_MODEL` | `gemini-2.5-flash` | 用于验证密钥有效性的模型 🤖 |
+| `HAJIMI_PAID_MODEL` | `gemini-2.5-pro-preview-03-25` | 用于验证付费密钥的模型 💎 |
 
-# GPT-load - 付费密钥配置
-GPT_LOAD_PAID_SYNC_ENABLED=false
-GPT_LOAD_PAID_GROUP_NAME=paid_group
+### 5️⃣ 密钥同步配置
 
-# 429限速密钥处理策略
-RATE_LIMITED_HANDLING=save_only
-GPT_LOAD_RATE_LIMITED_GROUP_NAME=rate_limited_group
+**Gemini Balancer 同步**
 
-# 高级配置（建议保持默认）
-HAJIMI_PAID_MODEL=gemini-2.0-flash-thinking-exp-01-21
-VALID_KEY_PREFIX=keys/keys_valid_
-RATE_LIMITED_KEY_PREFIX=keys/key_429_
-KEYS_SEND_PREFIX=keys/keys_send_
-PAID_KEY_PREFIX=keys/keys_paid_
-VALID_KEY_DETAIL_PREFIX=logs/keys_valid_detail_
-RATE_LIMITED_KEY_DETAIL_PREFIX=logs/key_429_detail_
-KEYS_SEND_DETAIL_PREFIX=logs/keys_send_detail_
-PAID_KEY_DETAIL_PREFIX=logs/keys_paid_detail_
-SCANNED_SHAS_FILE=scanned_shas.txt
-FILE_PATH_BLACKLIST=readme,docs,doc/,.md,example,sample,tutorial,test,spec,demo,mock
-LANGUAGE=zh_cn
-```
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `GEMINI_BALANCER_SYNC_ENABLED` | `false` | 是否启用同步 🔗 |
+| `GEMINI_BALANCER_URL` | 空 | 服务地址（如：`http://your-balancer.com`）🌐 |
+| `GEMINI_BALANCER_AUTH` | 空 | 认证密码 🔐 |
+
+**GPT-Load 同步**
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `GPT_LOAD_SYNC_ENABLED` | `false` | 是否启用密钥同步 🔗 |
+| `GPT_LOAD_URL` | 空 | 服务地址（如：`http://your-gpt-load.com`）🌐 |
+| `GPT_LOAD_AUTH` | 空 | 认证Token（页面密码）🔐 |
+| `GPT_LOAD_GROUP_NAME` | 空 | 目标组名，多个用逗号分隔（如：`group1,group2`）👥 |
+
+**付费密钥同步**
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `GPT_LOAD_PAID_SYNC_ENABLED` | `false` | 是否将付费密钥上传到独立分组 💎 |
+| `GPT_LOAD_PAID_GROUP_NAME` | 空 | 付费密钥的分组名（如：`paid_group`）💎 |
+
+**429限速密钥处理**
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `RATE_LIMITED_HANDLING` | `save_only` | 处理策略：`discard`/`save_only`/`sync`/`sync_separate` ⏰ |
+| `GPT_LOAD_RATE_LIMITED_GROUP_NAME` | 空 | 429密钥的分组名（当策略为`sync_separate`时使用）⏰ |
+
+**`RATE_LIMITED_HANDLING` 策略说明：**
+- `discard` - 丢弃，不保存不同步
+- `save_only` - 仅本地保存
+- `sync` - 作为普通密钥同步
+- `sync_separate` - 同步到独立分组
+
+### 6️⃣ 高级配置
+
+**文本存储配置**（仅当 `STORAGE_TYPE=text` 时需要）
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `VALID_KEY_PREFIX` | `keys/keys_valid_` | 有效密钥文件前缀 🗝️ |
+| `RATE_LIMITED_KEY_PREFIX` | `keys/key_429_` | 429密钥文件前缀 ⏰ |
+| `PAID_KEY_PREFIX` | `keys/keys_paid_` | 付费密钥文件前缀 💎 |
+| `KEYS_SEND_PREFIX` | `keys/keys_send_` | 已发送密钥文件前缀 🚀 |
+| `VALID_KEY_DETAIL_PREFIX` | `logs/keys_valid_detail_` | 有效密钥详细日志前缀 📝 |
+| `RATE_LIMITED_KEY_DETAIL_PREFIX` | `logs/key_429_detail_` | 429密钥详细日志前缀 📊 |
+| `PAID_KEY_DETAIL_PREFIX` | `logs/keys_paid_detail_` | 付费密钥详细日志前缀 💎 |
+| `KEYS_SEND_DETAIL_PREFIX` | `logs/keys_send_detail_` | 已发送密钥详细日志前缀 🚀 |
+
+**其他配置**
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `SCANNED_SHAS_FILE` | `scanned_shas.txt` | 已扫描文件SHA记录文件名 📋 |
+
+---
 
 ### 查询配置文件 🔍
 
@@ -240,12 +183,88 @@ AizaSy in:file filename:.env
 
 ---
 
+## 💾 数据库存储说明
+
+### 数据库表结构
+
+系统使用单表设计，支持 SQLite/PostgreSQL/MySQL 三种数据库：
+
+**keys 表结构：**
+
+| 字段名 | 类型 | 说明 | 约束 |
+|--------|------|------|------|
+| `id` | INTEGER | 主键ID | PRIMARY KEY, AUTO_INCREMENT |
+| `api_key` | TEXT | Gemini API密钥 | NOT NULL, UNIQUE |
+| `key_type` | TEXT | 密钥类型 | NOT NULL |
+| `repo_name` | TEXT | GitHub仓库名称 | 可空 |
+| `file_path` | TEXT | 文件路径 | 可空 |
+| `file_url` | TEXT | GitHub文件URL | 可空 |
+| `created_at` | TIMESTAMP | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | 更新时间 | DEFAULT CURRENT_TIMESTAMP |
+
+**密钥类型 (key_type)：**
+- `valid` - 有效的免费密钥
+- `paid` - 付费层级密钥
+- `rate_limited` - 被限流的429密钥
+- `send` - 已发送的密钥记录
+
+**索引：**
+- `idx_key_type` - key_type 字段索引
+- `idx_created_at` - created_at 字段索引
+
+### 使用示例
+
+#### SQLite（推荐，无需额外安装）
+```bash
+STORAGE_TYPE=sql
+DB_TYPE=sqlite
+SQLITE_DB_PATH=keys.db
+```
+
+#### PostgreSQL
+```bash
+STORAGE_TYPE=sql
+DB_TYPE=postgresql
+POSTGRESQL_HOST=localhost
+POSTGRESQL_PORT=5432
+POSTGRESQL_DATABASE=hajimi_keys
+POSTGRESQL_USER=postgres
+POSTGRESQL_PASSWORD=yourpassword
+```
+
+#### MySQL
+```bash
+STORAGE_TYPE=sql
+DB_TYPE=mysql
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_DATABASE=hajimi_keys
+MYSQL_USER=root
+MYSQL_PASSWORD=yourpassword
+```
+
+### 数据迁移
+
+**自动迁移：** 首次启用 SQL 存储时，系统会：
+1. 🔍 自动检测 `data/keys/` 目录下的历史文本文件
+2. 📦 备份原始文件到 `backup_before_migration_*` 目录
+3. 🔄 将所有密钥迁移到数据库（保留元数据）
+4. 🗑️ 迁移完成后删除原文本文件
+
+**手动切换回文本存储：**
+```bash
+STORAGE_TYPE=text
+```
+
+---
+
 ## 🔒 安全注意事项 🛡️
 
 - ✅ GitHub Token权限最小化（只需`public_repo`读取权限）🔐
 - ✅ 定期轮换GitHub Token 🔄
 - ✅ 不要将真实的API密钥提交到版本控制 🙈
-- ✅ 定期检查和清理发现的密钥文件 🧹
+- ✅ 定期检查和清理发现的密钥（文件或数据库） 🧹
+- ✅ 数据库密码使用强密码并妥善保管 🔐
 
 💖 **享受使用 Hajimi King Pro的快乐时光！** 🎉✨🎊
 

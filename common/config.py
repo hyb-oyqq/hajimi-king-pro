@@ -1,6 +1,6 @@
 import os
 import random
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from dotenv import load_dotenv
 
@@ -78,6 +78,27 @@ class Config:
     # 语言配置
     LANGUAGE = os.getenv("LANGUAGE", "zh_cn").lower()
 
+    # 存储配置
+    STORAGE_TYPE = os.getenv("STORAGE_TYPE", "sql").lower()  # text 或 sql，默认sql
+    DB_TYPE = os.getenv("DB_TYPE", "sqlite").lower()  # sqlite, postgresql, mysql，默认sqlite
+    
+    # SQLite配置
+    SQLITE_DB_PATH = os.getenv("SQLITE_DB_PATH", "keys.db")
+    
+    # PostgreSQL配置
+    POSTGRESQL_HOST = os.getenv("POSTGRESQL_HOST", "localhost")
+    POSTGRESQL_PORT = int(os.getenv("POSTGRESQL_PORT", "5432"))
+    POSTGRESQL_DATABASE = os.getenv("POSTGRESQL_DATABASE", "hajimi_keys")
+    POSTGRESQL_USER = os.getenv("POSTGRESQL_USER", "postgres")
+    POSTGRESQL_PASSWORD = os.getenv("POSTGRESQL_PASSWORD", "")
+    
+    # MySQL配置
+    MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+    MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+    MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "hajimi_keys")
+    MYSQL_USER = os.getenv("MYSQL_USER", "root")
+    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+
     @classmethod
     def parse_bool(cls, value: str) -> bool:
         """
@@ -120,6 +141,42 @@ class Config:
             'http': proxy_url,
             'https': proxy_url
         }
+    
+    @classmethod
+    def get_db_config(cls) -> Dict[str, Any]:
+        """
+        获取数据库配置
+        
+        Returns:
+            Dict[str, Any]: 数据库配置字典
+        """
+        if cls.DB_TYPE == 'sqlite':
+            db_path = cls.SQLITE_DB_PATH
+            # 如果是相对路径，则相对于DATA_PATH
+            if not os.path.isabs(db_path):
+                db_path = os.path.join(cls.DATA_PATH, db_path)
+            
+            return {
+                'db_path': db_path
+            }
+        elif cls.DB_TYPE == 'postgresql':
+            return {
+                'host': cls.POSTGRESQL_HOST,
+                'port': cls.POSTGRESQL_PORT,
+                'database': cls.POSTGRESQL_DATABASE,
+                'user': cls.POSTGRESQL_USER,
+                'password': cls.POSTGRESQL_PASSWORD
+            }
+        elif cls.DB_TYPE == 'mysql':
+            return {
+                'host': cls.MYSQL_HOST,
+                'port': cls.MYSQL_PORT,
+                'database': cls.MYSQL_DATABASE,
+                'user': cls.MYSQL_USER,
+                'password': cls.MYSQL_PASSWORD
+            }
+        else:
+            return {}
 
     @classmethod
     def check(cls) -> bool:
@@ -204,6 +261,21 @@ logger.info(f"SCANNED_SHAS_FILE: {Config.SCANNED_SHAS_FILE}")
 logger.info(f"HAJIMI_CHECK_MODEL: {Config.HAJIMI_CHECK_MODEL}")
 logger.info(f"HAJIMI_PAID_MODEL: {Config.HAJIMI_PAID_MODEL}")
 logger.info(f"FILE_PATH_BLACKLIST: {len(Config.FILE_PATH_BLACKLIST)} items")
+logger.info(f"STORAGE_TYPE: {Config.STORAGE_TYPE}")
+logger.info(f"DB_TYPE: {Config.DB_TYPE}")
+if Config.STORAGE_TYPE == 'sql':
+    if Config.DB_TYPE == 'sqlite':
+        logger.info(f"SQLITE_DB_PATH: {Config.SQLITE_DB_PATH}")
+    elif Config.DB_TYPE == 'postgresql':
+        logger.info(f"POSTGRESQL_HOST: {Config.POSTGRESQL_HOST}")
+        logger.info(f"POSTGRESQL_PORT: {Config.POSTGRESQL_PORT}")
+        logger.info(f"POSTGRESQL_DATABASE: {Config.POSTGRESQL_DATABASE}")
+        logger.info(f"POSTGRESQL_USER: {Config.POSTGRESQL_USER}")
+    elif Config.DB_TYPE == 'mysql':
+        logger.info(f"MYSQL_HOST: {Config.MYSQL_HOST}")
+        logger.info(f"MYSQL_PORT: {Config.MYSQL_PORT}")
+        logger.info(f"MYSQL_DATABASE: {Config.MYSQL_DATABASE}")
+        logger.info(f"MYSQL_USER: {Config.MYSQL_USER}")
 logger.info(f"*" * 30 + " CONFIG END " + "*" * 30)
 
 # 创建全局配置实例
