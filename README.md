@@ -27,80 +27,14 @@
 
 - [ ] **数据库支持保存key** 💾 - 支持将发现的API密钥持久化存储到数据库中
 - [ ] **API、可视化展示抓取的key列表** 📊 - 提供API接口和可视化界面获取已抓取的密钥列表
-- [x] **付费key检测** 💰 - 额外check下付费key
+- [ ] **多线程支持** 🛠️ - 支持多线程并发处理，提高处理效率
+
 
 ## 📋 目录 🗂️
 
-- [本地部署](#-本地部署) 🏠
+- [本地部署](./wiki/%E6%9C%AC%E5%9C%B0%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B) 🏠
 - [Docker部署](#-docker部署) 🐳
 - [配置变量说明](#-配置变量说明) ⚙️
-
----
-
-## 🖥️ 本地部署 🚀
-
-### 1. 环境准备 🔧
-
-```bash
-# 确保已安装Python
-python --version
-
-# 安装uv包管理器（如果未安装）
-pip install uv
-```
-
-### 2. 项目设置 📁
-
-```bash
-# 克隆项目
-git clone <repository-url>
-cd hajimi-king-pro
-
-# 复制配置文件
-cp env.example .env
-
-# 复制查询文件
-cp queries.example queries.txt
-```
-
-### 3. 配置环境变量 🔑
-
-编辑 `.env` 文件，**必须**配置GitHub Token：
-
-```bash
-# 必填：GitHub访问令牌
-GITHUB_TOKENS=ghp1,ghp2,ghp3
-
-# 可选：其他配置保持默认值即可
-```
-
-> 💡 **获取GitHub Token**：访问 [GitHub Settings > Tokens](https://github.com/settings/tokens)，创建具有 `public_repo` 权限的访问令牌 🎫
-
-### 4. 安装依赖并运行 ⚡
-
-```bash
-# 安装项目依赖
-uv pip install -r pyproject.toml
-
-# 创建数据目录
-mkdir -p data
-
-# 运行程序
-python app/hajimi_king.py
-```
-
-### 5. 本地运行管理 🎮
-
-```bash
-# 查看日志文件
-tail -f data/keys/keys_valid_detail_*.log
-
-# 查看找到的有效密钥
-cat data/keys/keys_valid_*.txt
-
-# 停止程序
-Ctrl + C
-```
 
 ---
 
@@ -111,7 +45,7 @@ Ctrl + C
 ```yaml
 version: '3.8'
 services:
-  hajimi-king-pro:
+  hajimi-king:
     image: ghcr.io/hyb-oyqq/hajimi-king-pro:latest
     container_name: hajimi-king-pro
     restart: unless-stopped
@@ -131,7 +65,7 @@ services:
 ```yaml
 version: '3.8'
 services:
-  hajimi-king-pro:
+  hajimi-king:
     image: ghcr.io/hyb-oyqq/hajimi-king-pro:latest
     container_name: hajimi-king-pro
     restart: unless-stopped
