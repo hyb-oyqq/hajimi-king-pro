@@ -416,6 +416,12 @@ def main():
     logger.info(t('date_filter', Config.DATE_RANGE_DAYS))
     if Config.PROXY_LIST:
         logger.info(t('proxy_configured', len(Config.PROXY_LIST)))
+    
+    # 显示强制冷却配置
+    if Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED):
+        per_query = f"{Config.FORCED_COOLDOWN_HOURS_PER_QUERY} 小时" if Config.FORCED_COOLDOWN_HOURS_PER_QUERY != "0" else "禁用"
+        per_loop = f"{Config.FORCED_COOLDOWN_HOURS_PER_LOOP} 小时" if Config.FORCED_COOLDOWN_HOURS_PER_LOOP != "0" else "禁用"
+        logger.info(t('forced_cooldown_status', per_query, per_loop))
 
     if checkpoint.last_scan_time:
         logger.info(t('checkpoint_found'))
@@ -512,14 +518,33 @@ def main():
                 file_manager.save_checkpoint(checkpoint)
                 file_manager.update_dynamic_filenames()
 
+                # 强制冷却 - 每个查询后
+                if Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED):
+                    cooldown_hours = Config.parse_cooldown_hours(Config.FORCED_COOLDOWN_HOURS_PER_QUERY)
+                    if cooldown_hours > 0:
+                        cooldown_seconds = int(cooldown_hours * 3600)
+                        logger.info(t('forced_cooldown_query', cooldown_hours, cooldown_seconds))
+                        time.sleep(cooldown_seconds)
+
                 if query_count % 5 == 0:
                     logger.info(t('taking_break', query_count))
                     time.sleep(1)
 
             logger.info(t('loop_complete', loop_count, loop_processed_files, total_keys_found, total_rate_limited_keys))
 
-            logger.info(t('sleeping'))
-            time.sleep(10)
+            # 强制冷却 - 每轮循环后
+            if Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED):
+                cooldown_hours = Config.parse_cooldown_hours(Config.FORCED_COOLDOWN_HOURS_PER_LOOP)
+                if cooldown_hours > 0:
+                    cooldown_seconds = int(cooldown_hours * 3600)
+                    logger.info(t('forced_cooldown_loop', cooldown_hours, cooldown_seconds))
+                    time.sleep(cooldown_seconds)
+                else:
+                    logger.info(t('sleeping'))
+                    time.sleep(10)
+            else:
+                logger.info(t('sleeping'))
+                time.sleep(10)
 
         except KeyboardInterrupt:
             logger.info(t('interrupted'))

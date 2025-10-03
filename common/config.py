@@ -98,6 +98,11 @@ class Config:
     MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "hajimi_keys")
     MYSQL_USER = os.getenv("MYSQL_USER", "root")
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+    
+    # 强制冷却配置（支持固定值或范围，如 "1" 或 "1-3"）
+    FORCED_COOLDOWN_ENABLED = os.getenv("FORCED_COOLDOWN_ENABLED", "false")
+    FORCED_COOLDOWN_HOURS_PER_QUERY = os.getenv("FORCED_COOLDOWN_HOURS_PER_QUERY", "0")
+    FORCED_COOLDOWN_HOURS_PER_LOOP = os.getenv("FORCED_COOLDOWN_HOURS_PER_LOOP", "0")
 
     @classmethod
     def parse_bool(cls, value: str) -> bool:
@@ -121,6 +126,51 @@ class Config:
             return bool(value)
         
         return False
+    
+    @classmethod
+    def parse_cooldown_hours(cls, value: str) -> float:
+        """
+        解析冷却时间配置，支持固定值或范围
+        
+        格式：
+        - 固定值：如 "1" 或 "1.5"
+        - 范围值：如 "1-3" 或 "0.5-1.5"
+        
+        Args:
+            value: 配置值字符串
+            
+        Returns:
+            float: 解析后的冷却时间（小时），如果是范围则返回随机值
+        """
+        if not value:
+            return 0.0
+        
+        value = str(value).strip()
+        
+        # 检查是否为范围格式 (如 "1-3")
+        if '-' in value:
+            parts = value.split('-')
+            if len(parts) == 2:
+                try:
+                    min_hours = float(parts[0].strip())
+                    max_hours = float(parts[1].strip())
+                    
+                    # 确保最小值不大于最大值
+                    if min_hours > max_hours:
+                        min_hours, max_hours = max_hours, min_hours
+                    
+                    # 返回范围内的随机值
+                    return random.uniform(min_hours, max_hours)
+                except ValueError:
+                    logger.warning(f"⚠️ 无法解析冷却时间范围: {value}，使用默认值 0")
+                    return 0.0
+        
+        # 固定值格式
+        try:
+            return float(value)
+        except ValueError:
+            logger.warning(f"⚠️ 无法解析冷却时间: {value}，使用默认值 0")
+            return 0.0
 
     @classmethod
     def get_random_proxy(cls) -> Optional[Dict[str, str]]:
@@ -261,6 +311,9 @@ logger.info(f"SCANNED_SHAS_FILE: {Config.SCANNED_SHAS_FILE}")
 logger.info(f"HAJIMI_CHECK_MODEL: {Config.HAJIMI_CHECK_MODEL}")
 logger.info(f"HAJIMI_PAID_MODEL: {Config.HAJIMI_PAID_MODEL}")
 logger.info(f"FILE_PATH_BLACKLIST: {len(Config.FILE_PATH_BLACKLIST)} items")
+logger.info(f"FORCED_COOLDOWN_ENABLED: {Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED)}")
+logger.info(f"FORCED_COOLDOWN_HOURS_PER_QUERY: {Config.FORCED_COOLDOWN_HOURS_PER_QUERY}")
+logger.info(f"FORCED_COOLDOWN_HOURS_PER_LOOP: {Config.FORCED_COOLDOWN_HOURS_PER_LOOP}")
 logger.info(f"STORAGE_TYPE: {Config.STORAGE_TYPE}")
 logger.info(f"DB_TYPE: {Config.DB_TYPE}")
 if Config.STORAGE_TYPE == 'sql':

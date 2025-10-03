@@ -48,6 +48,9 @@ class Translations:
             'taking_break': '⏸️ 已处理 {} 个查询，休息一下...',
             'loop_complete': '🏁 循环 #{} 完成 - 处理了 {} 个文件 | 总有效: {} | 总限速: {}',
             'sleeping': '💤 休眠 10 秒...',
+            'forced_cooldown_query': '❄️ 强制冷却中... 查询处理完成后等待 {:.2f} 小时 ({} 秒)',
+            'forced_cooldown_loop': '❄️ 强制冷却中... 循环完成后等待 {:.2f} 小时 ({} 秒)',
+            'forced_cooldown_status': 'ℹ️ 强制冷却已启用 - 每个查询后: {} | 每轮循环后: {}',
             
             # 文件处理相关
             'failed_fetch_content': '⚠️ 获取文件内容失败: {}',
@@ -246,6 +249,9 @@ class Translations:
             'taking_break': '⏸️ Processed {} queries, taking a break...',
             'loop_complete': '🏁 Loop #{} complete - Processed {} files | Total valid: {} | Total rate limited: {}',
             'sleeping': '💤 Sleeping for 10 seconds...',
+            'forced_cooldown_query': '❄️ Forced cooldown... Waiting {:.2f} hours after query completion ({} seconds)',
+            'forced_cooldown_loop': '❄️ Forced cooldown... Waiting {:.2f} hours after loop completion ({} seconds)',
+            'forced_cooldown_status': 'ℹ️ Forced cooldown enabled - Per query: {} | Per loop: {}',
             
             # File processing
             'failed_fetch_content': '⚠️ Failed to fetch content for file: {}',
