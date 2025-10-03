@@ -54,7 +54,7 @@
 | `DATA_PATH` | `/app/data` | 数据存储目录 |
 | `QUERIES_FILE` | `queries.txt` | 搜索查询配置文件（相对于DATA_PATH） |
 | `LANGUAGE` | `zh_cn` | 界面语言（`zh_cn`/`en`） |
-| `PROXY` | 空 | 代理服务器（多个用逗号分隔） |
+| `PROXY` | 空 | 代理服务器（支持HTTP/HTTPS/SOCKS5，多个用逗号分隔）<br>格式: `http://host:port`, `socks5://user:pass@host:port` |
 | `DATE_RANGE_DAYS` | `730` | 仓库年龄过滤（天数） |
 | `FILE_PATH_BLACKLIST` | `readme,docs,...` | 文件路径黑名单（逗号分隔） |
 
