@@ -86,6 +86,61 @@ class DatabaseManager:
             List[Dict]: 密钥列表，每个元素包含key, key_type, created_at等字段
         """
         raise NotImplementedError
+    
+    def add_scanned_sha(self, sha: str, repo_name: Optional[str] = None) -> bool:
+        """
+        添加已扫描的SHA
+        
+        Args:
+            sha: Git SHA值
+            repo_name: 仓库名称（可选）
+        
+        Returns:
+            bool: 是否添加成功
+        """
+        raise NotImplementedError
+    
+    def has_scanned_sha(self, sha: str) -> bool:
+        """
+        检查SHA是否已扫描
+        
+        Args:
+            sha: Git SHA值
+        
+        Returns:
+            bool: 是否已扫描
+        """
+        raise NotImplementedError
+    
+    def get_all_scanned_shas(self) -> List[str]:
+        """
+        获取所有已扫描的SHA列表
+        
+        Returns:
+            List[str]: SHA列表
+        """
+        raise NotImplementedError
+    
+    def clean_old_shas(self, days: int) -> int:
+        """
+        清理指定天数之前写入的SHA记录（基于scanned_at字段）
+        
+        Args:
+            days: 保留天数，清理超过此天数前写入的SHA
+        
+        Returns:
+            int: 清理的记录数
+        """
+        raise NotImplementedError
+    
+    def get_scanned_shas_count(self) -> int:
+        """
+        获取已扫描SHA的总数
+        
+        Returns:
+            int: SHA总数
+        """
+        raise NotImplementedError
 
 
 class SQLiteManager(DatabaseManager):
@@ -103,7 +158,8 @@ class SQLiteManager(DatabaseManager):
             if db_dir and not os.path.exists(db_dir):
                 os.makedirs(db_dir, exist_ok=True)
             
-            self.conn = sqlite3.connect(self.db_path)
+            # check_same_thread=False 允许多线程访问（适用于读多写少的场景）
+            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.conn.row_factory = sqlite3.Row  # 使结果可以通过列名访问
             logger.info(t('db_connected', 'SQLite', self.db_path))
         except Exception as e:
@@ -134,6 +190,24 @@ class SQLiteManager(DatabaseManager):
                 ''')
                 cursor.execute('''
                     CREATE INDEX IF NOT EXISTS idx_created_at ON keys(created_at)
+                ''')
+                
+                # 创建scanned_shas表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS scanned_shas (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        sha TEXT NOT NULL UNIQUE,
+                        repo_name TEXT,
+                        scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # 创建SHA相关索引
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_sha ON scanned_shas(sha)
+                ''')
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_scanned_at ON scanned_shas(scanned_at)
                 ''')
                 
             logger.info(t('db_tables_initialized', 'SQLite'))
@@ -202,6 +276,73 @@ class SQLiteManager(DatabaseManager):
         except Exception as e:
             logger.error(t('db_keys_get_failed', 'SQLite', e))
             return []
+    
+    def add_scanned_sha(self, sha: str, repo_name: Optional[str] = None) -> bool:
+        """添加已扫描的SHA到SQLite（如果已存在则忽略）"""
+        if not sha:
+            return False
+        
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('''
+                    INSERT OR IGNORE INTO scanned_shas 
+                    (sha, repo_name, scanned_at)
+                    VALUES (?, ?, CURRENT_TIMESTAMP)
+                ''', (sha, repo_name))
+            return True
+        except Exception as e:
+            logger.error(f"Failed to add scanned SHA to SQLite: {e}")
+            return False
+    
+    def has_scanned_sha(self, sha: str) -> bool:
+        """检查SHA是否已在SQLite中扫描"""
+        if not sha:
+            return False
+        
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT 1 FROM scanned_shas WHERE sha = ? LIMIT 1', (sha,))
+                return cursor.fetchone() is not None
+        except Exception as e:
+            logger.error(f"Failed to check scanned SHA in SQLite: {e}")
+            return False
+    
+    def get_all_scanned_shas(self) -> List[str]:
+        """从SQLite获取所有已扫描的SHA列表"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT sha FROM scanned_shas ORDER BY scanned_at DESC')
+                rows = cursor.fetchall()
+                return [row['sha'] for row in rows]
+        except Exception as e:
+            logger.error(f"Failed to get all scanned SHAs from SQLite: {e}")
+            return []
+    
+    def clean_old_shas(self, days: int) -> int:
+        """清理SQLite中指定天数之前写入的SHA记录（基于scanned_at）"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('''
+                    DELETE FROM scanned_shas 
+                    WHERE scanned_at < datetime('now', '-' || ? || ' days')
+                ''', (days,))
+                deleted_count = cursor.rowcount
+                logger.info(f"🗑️ 已清理 {deleted_count} 个超过 {days} 天前写入的SHA记录")
+                return deleted_count
+        except Exception as e:
+            logger.error(f"Failed to clean old SHAs in SQLite: {e}")
+            return 0
+    
+    def get_scanned_shas_count(self) -> int:
+        """获取SQLite中已扫描SHA的总数"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT COUNT(*) as count FROM scanned_shas')
+                row = cursor.fetchone()
+                return row['count'] if row else 0
+        except Exception as e:
+            logger.error(f"Failed to get scanned SHAs count from SQLite: {e}")
+            return 0
 
 
 class PostgreSQLManager(DatabaseManager):
@@ -263,6 +404,24 @@ class PostgreSQLManager(DatabaseManager):
                     CREATE INDEX IF NOT EXISTS idx_created_at ON keys(created_at)
                 ''')
                 
+                # 创建scanned_shas表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS scanned_shas (
+                        id SERIAL PRIMARY KEY,
+                        sha TEXT NOT NULL UNIQUE,
+                        repo_name TEXT,
+                        scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # 创建SHA相关索引
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_sha ON scanned_shas(sha)
+                ''')
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_scanned_at ON scanned_shas(scanned_at)
+                ''')
+                
             logger.info(t('db_tables_initialized', 'PostgreSQL'))
         except Exception as e:
             logger.error(t('db_tables_init_failed', 'PostgreSQL', e))
@@ -322,6 +481,74 @@ class PostgreSQLManager(DatabaseManager):
         except Exception as e:
             logger.error(t('db_keys_get_failed', 'PostgreSQL', e))
             return []
+    
+    def add_scanned_sha(self, sha: str, repo_name: Optional[str] = None) -> bool:
+        """添加已扫描的SHA到PostgreSQL（如果已存在则忽略）"""
+        if not sha:
+            return False
+        
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('''
+                    INSERT INTO scanned_shas 
+                    (sha, repo_name, scanned_at)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (sha) DO NOTHING
+                ''', (sha, repo_name))
+            return True
+        except Exception as e:
+            logger.error(f"Failed to add scanned SHA to PostgreSQL: {e}")
+            return False
+    
+    def has_scanned_sha(self, sha: str) -> bool:
+        """检查SHA是否已在PostgreSQL中扫描"""
+        if not sha:
+            return False
+        
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT 1 FROM scanned_shas WHERE sha = %s LIMIT 1', (sha,))
+                return cursor.fetchone() is not None
+        except Exception as e:
+            logger.error(f"Failed to check scanned SHA in PostgreSQL: {e}")
+            return False
+    
+    def get_all_scanned_shas(self) -> List[str]:
+        """从PostgreSQL获取所有已扫描的SHA列表"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT sha FROM scanned_shas ORDER BY scanned_at DESC')
+                rows = cursor.fetchall()
+                return [row['sha'] for row in rows]
+        except Exception as e:
+            logger.error(f"Failed to get all scanned SHAs from PostgreSQL: {e}")
+            return []
+    
+    def clean_old_shas(self, days: int) -> int:
+        """清理PostgreSQL中指定天数之前写入的SHA记录（基于scanned_at）"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('''
+                    DELETE FROM scanned_shas 
+                    WHERE scanned_at < CURRENT_TIMESTAMP - INTERVAL '%s days'
+                ''', (days,))
+                deleted_count = cursor.rowcount
+                logger.info(f"🗑️ 已清理 {deleted_count} 个超过 {days} 天前写入的SHA记录")
+                return deleted_count
+        except Exception as e:
+            logger.error(f"Failed to clean old SHAs in PostgreSQL: {e}")
+            return 0
+    
+    def get_scanned_shas_count(self) -> int:
+        """获取PostgreSQL中已扫描SHA的总数"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT COUNT(*) as count FROM scanned_shas')
+                row = cursor.fetchone()
+                return row['count'] if row else 0
+        except Exception as e:
+            logger.error(f"Failed to get scanned SHAs count from PostgreSQL: {e}")
+            return 0
 
 
 class MySQLManager(DatabaseManager):
@@ -384,6 +611,25 @@ class MySQLManager(DatabaseManager):
                     CREATE INDEX IF NOT EXISTS idx_created_at ON `keys`(created_at)
                 ''')
                 
+                # 创建scanned_shas表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS `scanned_shas` (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        sha VARCHAR(255) NOT NULL,
+                        repo_name TEXT,
+                        scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE KEY unique_sha (sha)
+                    )
+                ''')
+                
+                # 创建SHA相关索引
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_sha ON `scanned_shas`(sha)
+                ''')
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_scanned_at ON `scanned_shas`(scanned_at)
+                ''')
+                
             logger.info(t('db_tables_initialized', 'MySQL'))
         except Exception as e:
             logger.error(t('db_tables_init_failed', 'MySQL', e))
@@ -442,6 +688,73 @@ class MySQLManager(DatabaseManager):
         except Exception as e:
             logger.error(t('db_keys_get_failed', 'MySQL', e))
             return []
+    
+    def add_scanned_sha(self, sha: str, repo_name: Optional[str] = None) -> bool:
+        """添加已扫描的SHA到MySQL（如果已存在则忽略）"""
+        if not sha:
+            return False
+        
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('''
+                    INSERT IGNORE INTO `scanned_shas` 
+                    (sha, repo_name, scanned_at)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP)
+                ''', (sha, repo_name))
+            return True
+        except Exception as e:
+            logger.error(f"Failed to add scanned SHA to MySQL: {e}")
+            return False
+    
+    def has_scanned_sha(self, sha: str) -> bool:
+        """检查SHA是否已在MySQL中扫描"""
+        if not sha:
+            return False
+        
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT 1 FROM `scanned_shas` WHERE sha = %s LIMIT 1', (sha,))
+                return cursor.fetchone() is not None
+        except Exception as e:
+            logger.error(f"Failed to check scanned SHA in MySQL: {e}")
+            return False
+    
+    def get_all_scanned_shas(self) -> List[str]:
+        """从MySQL获取所有已扫描的SHA列表"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT sha FROM `scanned_shas` ORDER BY scanned_at DESC')
+                rows = cursor.fetchall()
+                return [row['sha'] for row in rows]
+        except Exception as e:
+            logger.error(f"Failed to get all scanned SHAs from MySQL: {e}")
+            return []
+    
+    def clean_old_shas(self, days: int) -> int:
+        """清理MySQL中指定天数之前写入的SHA记录（基于scanned_at）"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('''
+                    DELETE FROM `scanned_shas` 
+                    WHERE scanned_at < DATE_SUB(NOW(), INTERVAL %s DAY)
+                ''', (days,))
+                deleted_count = cursor.rowcount
+                logger.info(f"🗑️ 已清理 {deleted_count} 个超过 {days} 天前写入的SHA记录")
+                return deleted_count
+        except Exception as e:
+            logger.error(f"Failed to clean old SHAs in MySQL: {e}")
+            return 0
+    
+    def get_scanned_shas_count(self) -> int:
+        """获取MySQL中已扫描SHA的总数"""
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('SELECT COUNT(*) as count FROM `scanned_shas`')
+                row = cursor.fetchone()
+                return row['count'] if row else 0
+        except Exception as e:
+            logger.error(f"Failed to get scanned SHAs count from MySQL: {e}")
+            return 0
 
 
 def create_db_manager(storage_type: str, db_type: str, db_config: Dict[str, Any]) -> Optional[DatabaseManager]:

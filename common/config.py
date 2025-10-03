@@ -103,6 +103,11 @@ class Config:
     FORCED_COOLDOWN_ENABLED = os.getenv("FORCED_COOLDOWN_ENABLED", "false")
     FORCED_COOLDOWN_HOURS_PER_QUERY = os.getenv("FORCED_COOLDOWN_HOURS_PER_QUERY", "0")
     FORCED_COOLDOWN_HOURS_PER_LOOP = os.getenv("FORCED_COOLDOWN_HOURS_PER_LOOP", "0")
+    
+    # SHA清理配置
+    SHA_CLEANUP_ENABLED = os.getenv("SHA_CLEANUP_ENABLED", "true")  # 是否启用SHA自动清理
+    SHA_CLEANUP_DAYS = int(os.getenv("SHA_CLEANUP_DAYS", "7"))  # 清理超过多少天前写入的SHA，建议7天
+    SHA_CLEANUP_INTERVAL_LOOPS = int(os.getenv("SHA_CLEANUP_INTERVAL_LOOPS", "10"))  # 每多少轮循环执行一次清理，默认10轮
 
     @classmethod
     def parse_bool(cls, value: str) -> bool:
@@ -314,6 +319,9 @@ logger.info(f"FILE_PATH_BLACKLIST: {len(Config.FILE_PATH_BLACKLIST)} items")
 logger.info(f"FORCED_COOLDOWN_ENABLED: {Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED)}")
 logger.info(f"FORCED_COOLDOWN_HOURS_PER_QUERY: {Config.FORCED_COOLDOWN_HOURS_PER_QUERY}")
 logger.info(f"FORCED_COOLDOWN_HOURS_PER_LOOP: {Config.FORCED_COOLDOWN_HOURS_PER_LOOP}")
+logger.info(f"SHA_CLEANUP_ENABLED: {Config.parse_bool(Config.SHA_CLEANUP_ENABLED)}")
+logger.info(f"SHA_CLEANUP_DAYS: {Config.SHA_CLEANUP_DAYS} days")
+logger.info(f"SHA_CLEANUP_INTERVAL_LOOPS: every {Config.SHA_CLEANUP_INTERVAL_LOOPS} loops")
 logger.info(f"STORAGE_TYPE: {Config.STORAGE_TYPE}")
 logger.info(f"DB_TYPE: {Config.DB_TYPE}")
 if Config.STORAGE_TYPE == 'sql':

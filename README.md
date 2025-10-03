@@ -41,124 +41,100 @@
 
 以下是所有可配置的环境变量，在 `.env` 文件中设置：
 
-### 1️⃣ 必填配置
+### 必填配置
 
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
-| `GITHUB_TOKENS` | GitHub API访问令牌，多个用逗号分隔 🎫 | `ghp_token1,ghp_token2` |
+| `GITHUB_TOKENS` | GitHub API令牌（多个用逗号分隔） | `ghp_token1,ghp_token2` |
 
-### 2️⃣ 基础配置
-
-| 变量名 | 默认值 | 说明 |
-|--------|--------|------|
-| `DATA_PATH` | `/app/data` | 数据存储目录路径 📂 |
-| `QUERIES_FILE` | `queries.txt` | 搜索查询配置文件路径（相对于DATA_PATH）🎯 |
-| `LANGUAGE` | `zh_cn` | 界面语言：`zh_cn`=简体中文，`en`=英文 🌐 |
-| `PROXY` | 空 | 代理服务器，多个用逗号分隔<br>格式：`http://user:pass@host:port` 🌐 |
-| `DATE_RANGE_DAYS` | `730` | 仓库年龄过滤（天数），只扫描N天内有更新的仓库 📅 |
-| `FILE_PATH_BLACKLIST` | `readme,docs,...` | 文件路径黑名单，逗号分隔，跳过文档和示例文件 🚫 |
-
-### 3️⃣ 存储配置
+### 基础配置
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `STORAGE_TYPE` | `sql` | 存储方式：`sql`=数据库（推荐），`text`=文本文件 💾 |
-| `DB_TYPE` | `sqlite` | 数据库类型：`sqlite`/`postgresql`/`mysql` 🗄️ |
+| `DATA_PATH` | `/app/data` | 数据存储目录 |
+| `QUERIES_FILE` | `queries.txt` | 搜索查询配置文件（相对于DATA_PATH） |
+| `LANGUAGE` | `zh_cn` | 界面语言（`zh_cn`/`en`） |
+| `PROXY` | 空 | 代理服务器（多个用逗号分隔） |
+| `DATE_RANGE_DAYS` | `730` | 仓库年龄过滤（天数） |
+| `FILE_PATH_BLACKLIST` | `readme,docs,...` | 文件路径黑名单（逗号分隔） |
 
-**SQLite 配置**（推荐，无需额外安装）
-
-| 变量名 | 默认值 | 说明 |
-|--------|--------|------|
-| `SQLITE_DB_PATH` | `keys.db` | 数据库文件路径（相对于DATA_PATH）📁 |
-
-**PostgreSQL 配置**
+### 存储配置
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `POSTGRESQL_HOST` | `localhost` | 数据库主机地址 🌐 |
-| `POSTGRESQL_PORT` | `5432` | 数据库端口 🔌 |
-| `POSTGRESQL_DATABASE` | `hajimi_keys` | 数据库名 📊 |
-| `POSTGRESQL_USER` | `postgres` | 用户名 👤 |
-| `POSTGRESQL_PASSWORD` | 空 | 密码 🔐 |
+| `STORAGE_TYPE` | `sql` | 存储方式（`sql`/`text`，推荐sql） |
+| `DB_TYPE` | `sqlite` | 数据库类型（`sqlite`/`postgresql`/`mysql`） |
+| `SQLITE_DB_PATH` | `keys.db` | SQLite数据库文件路径 |
+| `POSTGRESQL_HOST` | `localhost` | PostgreSQL主机 |
+| `POSTGRESQL_PORT` | `5432` | PostgreSQL端口 |
+| `POSTGRESQL_DATABASE` | `hajimi_keys` | PostgreSQL数据库名 |
+| `POSTGRESQL_USER` | `postgres` | PostgreSQL用户名 |
+| `POSTGRESQL_PASSWORD` | 空 | PostgreSQL密码 |
+| `MYSQL_HOST` | `localhost` | MySQL主机 |
+| `MYSQL_PORT` | `3306` | MySQL端口 |
+| `MYSQL_DATABASE` | `hajimi_keys` | MySQL数据库名 |
+| `MYSQL_USER` | `root` | MySQL用户名 |
+| `MYSQL_PASSWORD` | 空 | MySQL密码 |
 
-**MySQL 配置**
+> 💡 首次启用SQL存储时，系统会自动迁移历史文本文件到数据库
 
-| 变量名 | 默认值 | 说明 |
-|--------|--------|------|
-| `MYSQL_HOST` | `localhost` | 数据库主机地址 🌐 |
-| `MYSQL_PORT` | `3306` | 数据库端口 🔌 |
-| `MYSQL_DATABASE` | `hajimi_keys` | 数据库名 📊 |
-| `MYSQL_USER` | `root` | 用户名 👤 |
-| `MYSQL_PASSWORD` | 空 | 密码 🔐 |
-
-> 💡 **数据迁移**：首次启用SQL存储时，系统会自动检测并迁移历史文本文件到数据库，完成后自动备份并删除原文件
-
-### 4️⃣ 模型配置
+### 模型配置
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `HAJIMI_CHECK_MODEL` | `gemini-2.5-flash` | 用于验证密钥有效性的模型 🤖 |
-| `HAJIMI_PAID_MODEL` | `gemini-2.5-pro-preview-03-25` | 用于验证付费密钥的模型 💎 |
+| `HAJIMI_CHECK_MODEL` | `gemini-2.5-flash` | 密钥验证模型 |
+| `HAJIMI_PAID_MODEL` | `gemini-2.5-pro-preview-03-25` | 付费密钥验证模型 |
 
-### 5️⃣ 密钥同步配置
-
-**Gemini Balancer 同步**
+### 密钥同步配置
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `GEMINI_BALANCER_SYNC_ENABLED` | `false` | 是否启用同步 🔗 |
-| `GEMINI_BALANCER_URL` | 空 | 服务地址（如：`http://your-balancer.com`）🌐 |
-| `GEMINI_BALANCER_AUTH` | 空 | 认证密码 🔐 |
+| `GEMINI_BALANCER_SYNC_ENABLED` | `false` | Gemini Balancer同步开关 |
+| `GEMINI_BALANCER_URL` | 空 | Gemini Balancer服务地址 |
+| `GEMINI_BALANCER_AUTH` | 空 | Gemini Balancer认证密码 |
+| `GPT_LOAD_SYNC_ENABLED` | `false` | GPT-Load同步开关 |
+| `GPT_LOAD_URL` | 空 | GPT-Load服务地址 |
+| `GPT_LOAD_AUTH` | 空 | GPT-Load认证Token |
+| `GPT_LOAD_GROUP_NAME` | 空 | GPT-Load目标组名（多个用逗号分隔） |
+| `GPT_LOAD_PAID_SYNC_ENABLED` | `false` | 付费密钥独立同步开关 |
+| `GPT_LOAD_PAID_GROUP_NAME` | 空 | 付费密钥分组名 |
+| `RATE_LIMITED_HANDLING` | `save_only` | 429密钥处理策略 |
+| `GPT_LOAD_RATE_LIMITED_GROUP_NAME` | 空 | 429密钥分组名 |
 
-**GPT-Load 同步**
+> **429密钥处理策略：** `discard`=丢弃 / `save_only`=仅保存 / `sync`=正常同步 / `sync_separate`=单独分组
 
-| 变量名 | 默认值 | 说明 |
-|--------|--------|------|
-| `GPT_LOAD_SYNC_ENABLED` | `false` | 是否启用密钥同步 🔗 |
-| `GPT_LOAD_URL` | 空 | 服务地址（如：`http://your-gpt-load.com`）🌐 |
-| `GPT_LOAD_AUTH` | 空 | 认证Token（页面密码）🔐 |
-| `GPT_LOAD_GROUP_NAME` | 空 | 目标组名，多个用逗号分隔（如：`group1,group2`）👥 |
-
-**付费密钥同步**
-
-| 变量名 | 默认值 | 说明 |
-|--------|--------|------|
-| `GPT_LOAD_PAID_SYNC_ENABLED` | `false` | 是否将付费密钥上传到独立分组 💎 |
-| `GPT_LOAD_PAID_GROUP_NAME` | 空 | 付费密钥的分组名（如：`paid_group`）💎 |
-
-**429限速密钥处理**
+### SHA清理配置
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `RATE_LIMITED_HANDLING` | `save_only` | 处理策略：`discard`/`save_only`/`sync`/`sync_separate` ⏰ |
-| `GPT_LOAD_RATE_LIMITED_GROUP_NAME` | 空 | 429密钥的分组名（当策略为`sync_separate`时使用）⏰ |
+| `SHA_CLEANUP_ENABLED` | `true` | 是否启用自动清理 |
+| `SHA_CLEANUP_DAYS` | `7` | 清理N天前的SHA记录 |
+| `SHA_CLEANUP_INTERVAL_LOOPS` | `10` | 每N轮执行一次清理 |
 
-**`RATE_LIMITED_HANDLING` 策略说明：**
-- `discard` - 丢弃，不保存不同步
-- `save_only` - 仅本地保存
-- `sync` - 作为普通密钥同步
-- `sync_separate` - 同步到独立分组
+> 💡 定期清理旧SHA记录可以重新扫描仓库，避免错过新密钥
 
-### 6️⃣ 高级配置
-
-**文本存储配置**（仅当 `STORAGE_TYPE=text` 时需要）
+### 强制冷却配置
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `VALID_KEY_PREFIX` | `keys/keys_valid_` | 有效密钥文件前缀 🗝️ |
-| `RATE_LIMITED_KEY_PREFIX` | `keys/key_429_` | 429密钥文件前缀 ⏰ |
-| `PAID_KEY_PREFIX` | `keys/keys_paid_` | 付费密钥文件前缀 💎 |
-| `KEYS_SEND_PREFIX` | `keys/keys_send_` | 已发送密钥文件前缀 🚀 |
-| `VALID_KEY_DETAIL_PREFIX` | `logs/keys_valid_detail_` | 有效密钥详细日志前缀 📝 |
-| `RATE_LIMITED_KEY_DETAIL_PREFIX` | `logs/key_429_detail_` | 429密钥详细日志前缀 📊 |
-| `PAID_KEY_DETAIL_PREFIX` | `logs/keys_paid_detail_` | 付费密钥详细日志前缀 💎 |
-| `KEYS_SEND_DETAIL_PREFIX` | `logs/keys_send_detail_` | 已发送密钥详细日志前缀 🚀 |
+| `FORCED_COOLDOWN_ENABLED` | `false` | 是否启用强制冷却 |
+| `FORCED_COOLDOWN_HOURS_PER_QUERY` | `0` | 每个查询后冷却时间（小时） |
+| `FORCED_COOLDOWN_HOURS_PER_LOOP` | `0` | 每轮搜索后冷却时间（小时） |
 
-**其他配置**
+> 💡 支持固定值（如`1`）或范围（如`1-3`或`0.5-1.5`）
+
+### 文本存储配置（仅STORAGE_TYPE=text）
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `SCANNED_SHAS_FILE` | `scanned_shas.txt` | 已扫描文件SHA记录文件名 📋 |
+| `VALID_KEY_PREFIX` | `keys/keys_valid_` | 有效密钥文件前缀 |
+| `RATE_LIMITED_KEY_PREFIX` | `keys/key_429_` | 429密钥文件前缀 |
+| `PAID_KEY_PREFIX` | `keys/keys_paid_` | 付费密钥文件前缀 |
+| `KEYS_SEND_PREFIX` | `keys/keys_send_` | 已发送密钥文件前缀 |
+| `VALID_KEY_DETAIL_PREFIX` | `logs/keys_valid_detail_` | 有效密钥日志前缀 |
+| `RATE_LIMITED_KEY_DETAIL_PREFIX` | `logs/key_429_detail_` | 429密钥日志前缀 |
+| `PAID_KEY_DETAIL_PREFIX` | `logs/keys_paid_detail_` | 付费密钥日志前缀 |
+| `KEYS_SEND_DETAIL_PREFIX` | `logs/keys_send_detail_` | 已发送密钥日志前缀 |
 
 ---
 
@@ -185,59 +161,33 @@ AizaSy in:file filename:.env
 
 ## 💾 数据库存储说明
 
-### 数据库表结构
+### 表结构
 
-系统使用单表设计，支持 SQLite/PostgreSQL/MySQL 三种数据库：
+系统使用单表设计，支持 SQLite/PostgreSQL/MySQL：
 
-**keys 表结构：**
+- **keys表**：`id`, `api_key`(唯一), `key_type`, `repo_name`, `file_path`, `file_url`, `created_at`, `updated_at`
+- **密钥类型**：`valid`(免费) / `paid`(付费) / `rate_limited`(429) / `send`(已发送)
 
-| 字段名 | 类型 | 说明 | 约束 |
-|--------|------|------|------|
-| `id` | INTEGER | 主键ID | PRIMARY KEY, AUTO_INCREMENT |
-| `api_key` | TEXT | Gemini API密钥 | NOT NULL, UNIQUE |
-| `key_type` | TEXT | 密钥类型 | NOT NULL |
-| `repo_name` | TEXT | GitHub仓库名称 | 可空 |
-| `file_path` | TEXT | 文件路径 | 可空 |
-| `file_url` | TEXT | GitHub文件URL | 可空 |
-| `created_at` | TIMESTAMP | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
-| `updated_at` | TIMESTAMP | 更新时间 | DEFAULT CURRENT_TIMESTAMP |
+### 配置示例
 
-**密钥类型 (key_type)：**
-- `valid` - 有效的免费密钥
-- `paid` - 付费层级密钥
-- `rate_limited` - 被限流的429密钥
-- `send` - 已发送的密钥记录
-
-**索引：**
-- `idx_key_type` - key_type 字段索引
-- `idx_created_at` - created_at 字段索引
-
-### 使用示例
-
-#### SQLite（推荐，无需额外安装）
 ```bash
+# SQLite（推荐）
 STORAGE_TYPE=sql
 DB_TYPE=sqlite
 SQLITE_DB_PATH=keys.db
-```
 
-#### PostgreSQL
-```bash
+# PostgreSQL
 STORAGE_TYPE=sql
 DB_TYPE=postgresql
 POSTGRESQL_HOST=localhost
-POSTGRESQL_PORT=5432
 POSTGRESQL_DATABASE=hajimi_keys
 POSTGRESQL_USER=postgres
 POSTGRESQL_PASSWORD=yourpassword
-```
 
-#### MySQL
-```bash
+# MySQL
 STORAGE_TYPE=sql
 DB_TYPE=mysql
 MYSQL_HOST=localhost
-MYSQL_PORT=3306
 MYSQL_DATABASE=hajimi_keys
 MYSQL_USER=root
 MYSQL_PASSWORD=yourpassword
@@ -245,26 +195,19 @@ MYSQL_PASSWORD=yourpassword
 
 ### 数据迁移
 
-**自动迁移：** 首次启用 SQL 存储时，系统会：
-1. 🔍 自动检测 `data/keys/` 目录下的历史文本文件
-2. 📦 备份原始文件到 `backup_before_migration_*` 目录
-3. 🔄 将所有密钥迁移到数据库（保留元数据）
-4. 🗑️ 迁移完成后删除原文本文件
-
-**手动切换回文本存储：**
-```bash
-STORAGE_TYPE=text
-```
+首次启用SQL存储时，系统自动检测并迁移历史文本文件到数据库，完成后备份并删除原文件。如需切换回文本存储，设置 `STORAGE_TYPE=text` 即可。
 
 ---
 
-## 🔒 安全注意事项 🛡️
+## 🔒 安全注意事项
 
-- ✅ GitHub Token权限最小化（只需`public_repo`读取权限）🔐
-- ✅ 定期轮换GitHub Token 🔄
-- ✅ 不要将真实的API密钥提交到版本控制 🙈
-- ✅ 定期检查和清理发现的密钥（文件或数据库） 🧹
-- ✅ 数据库密码使用强密码并妥善保管 🔐
+- GitHub Token权限最小化（只需`public_repo`读取权限）
+- 定期轮换GitHub Token
+- 不要将真实的API密钥提交到版本控制
+- 定期检查和清理发现的密钥（文件或数据库）
+- 数据库密码使用强密码并妥善保管
 
-💖 **享受使用 Hajimi King Pro的快乐时光！** 🎉✨🎊
+---
+
+💖 **享受使用 Hajimi King Pro的快乐时光！** 🎉
 

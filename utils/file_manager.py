@@ -102,7 +102,7 @@ class FileManager:
             logger.error(f"❌ Failed to load search queries: {e}")
             self._search_queries = []
 
-        # 5. 初始化文件名
+        # 5. 初始化文件名（仅当使用文本存储时创建文件）
         start_time = datetime.now()
 
         self._keys_valid_filename = os.path.join(
@@ -140,26 +140,30 @@ class FileManager:
             f"{Config.PAID_KEY_DETAIL_PREFIX}{start_time.strftime('%Y%m%d')}.log"
         )
 
-        # 创建文件（如果不存在），先确保父目录存在
-        for filename in [self._detail_log_filename, self._keys_valid_filename, self._rate_limited_filename, self._rate_limited_detail_filename, self._keys_send_filename,
-                         self._keys_send_detail_filename, self._paid_keys_filename, self._paid_keys_detail_filename]:
-            if not os.path.exists(filename):
-                # 确保父目录存在（类似 mkdir -p）
-                parent_dir = os.path.dirname(filename)
-                if parent_dir:
-                    os.makedirs(parent_dir, exist_ok=True)
+        # 仅当使用文本存储时，才创建文件和目录
+        if Config.STORAGE_TYPE == 'text':
+            # 创建文件（如果不存在），先确保父目录存在
+            for filename in [self._detail_log_filename, self._keys_valid_filename, self._rate_limited_filename, self._rate_limited_detail_filename, self._keys_send_filename,
+                             self._keys_send_detail_filename, self._paid_keys_filename, self._paid_keys_detail_filename]:
+                if not os.path.exists(filename):
+                    # 确保父目录存在（类似 mkdir -p）
+                    parent_dir = os.path.dirname(filename)
+                    if parent_dir:
+                        os.makedirs(parent_dir, exist_ok=True)
 
-                with open(filename, 'a', encoding='utf-8') as f:
-                    f.write("")
+                    with open(filename, 'a', encoding='utf-8') as f:
+                        f.write("")
 
-        logger.info(f"Initialized keys valid filename: {self._keys_valid_filename}")
-        logger.info(f"Initialized rate limited filename: {self._rate_limited_filename}")
-        logger.info(f"Initialized keys send filename: {self._keys_send_filename}")
-        logger.info(f"Initialized paid keys filename: {self._paid_keys_filename}")
-        logger.info(f"Initialized detail log filename: {self._detail_log_filename}")
-        logger.info(f"Initialized rate limited detail filename: {self._rate_limited_detail_filename}")
-        logger.info(f"Initialized keys send detail filename: {self._keys_send_detail_filename}")
-        logger.info(f"Initialized paid keys detail filename: {self._paid_keys_detail_filename}")
+            logger.info(f"Initialized keys valid filename: {self._keys_valid_filename}")
+            logger.info(f"Initialized rate limited filename: {self._rate_limited_filename}")
+            logger.info(f"Initialized keys send filename: {self._keys_send_filename}")
+            logger.info(f"Initialized paid keys filename: {self._paid_keys_filename}")
+            logger.info(f"Initialized detail log filename: {self._detail_log_filename}")
+            logger.info(f"Initialized rate limited detail filename: {self._rate_limited_detail_filename}")
+            logger.info(f"Initialized keys send detail filename: {self._keys_send_detail_filename}")
+            logger.info(f"Initialized paid keys detail filename: {self._paid_keys_detail_filename}")
+        else:
+            logger.info("Using SQL storage, text file creation skipped")
 
         # 6. 初始化数据库管理器（如果使用SQL存储）
         self.db_manager: Optional[DatabaseManager] = None
@@ -233,9 +237,23 @@ class FileManager:
         return checkpoint
 
     def load_scanned_shas(self) -> Set[str]:
-        """从文件中加载已扫描的SHA列表"""
+        """从数据库或文件中加载已扫描的SHA列表"""
         scanned_shas = set()
 
+        # 如果使用数据库存储，从数据库加载
+        if Config.STORAGE_TYPE == 'sql' and self.db_manager:
+            try:
+                sha_list = self.db_manager.get_all_scanned_shas()
+                scanned_shas = set(sha_list)
+                sha_count = len(scanned_shas)
+                logger.info(f"📊 从数据库加载了 {sha_count} 个已扫描的SHA")
+                return scanned_shas
+            except Exception as e:
+                logger.error(f"从数据库加载SHA失败: {e}")
+                logger.info("将尝试从文件加载SHA...")
+                traceback.print_exc()
+        
+        # 从文件加载（作为备选或text存储模式）
         if os.path.isfile(self.scanned_shas_file):
             try:
                 with open(self.scanned_shas_file, "r", encoding="utf-8") as f:
@@ -243,6 +261,7 @@ class FileManager:
                         line = line.strip()
                         if line and not line.startswith('#'):
                             scanned_shas.add(line)
+                logger.info(f"📊 从文件加载了 {len(scanned_shas)} 个已扫描的SHA")
             except Exception as e:
                 logger.error(f"Failed to read {self.scanned_shas_file}: {e}")
                 traceback.print_exc()
@@ -289,7 +308,21 @@ class FileManager:
             logger.error(f"Failed to save {self.checkpoint_file}: {e}")
 
     def save_scanned_shas(self, scanned_shas: Set[str]) -> None:
-        """保存已扫描的SHA列表到文件"""
+        """保存已扫描的SHA列表到数据库或文件"""
+        # 如果使用数据库存储，不需要批量保存（每个SHA会实时写入）
+        # 但仍然保存到文件作为备份
+        if Config.STORAGE_TYPE == 'sql':
+            logger.debug("使用数据库存储SHA，跳过批量文件保存")
+            # 保存备份到文件
+            if Config.parse_bool(os.getenv("BACKUP_SHA_TO_FILE", "true")):
+                self._save_shas_to_file(scanned_shas)
+            return
+        
+        # text存储模式，保存到文件
+        self._save_shas_to_file(scanned_shas)
+    
+    def _save_shas_to_file(self, scanned_shas: Set[str]) -> None:
+        """内部方法：保存SHA到文件"""
         try:
             with open(self.scanned_shas_file, "w", encoding="utf-8") as f:
                 f.write("# 已扫描的文件SHA列表\n")
@@ -315,8 +348,8 @@ class FileManager:
             }
             self.db_manager.save_keys(valid_keys, 'valid', metadata)
         
-        # 如果使用文本文件存储或作为备份
-        if Config.STORAGE_TYPE == 'text' or not self.db_manager:
+        # 仅在使用文本文件存储时保存到文件
+        if Config.STORAGE_TYPE == 'text':
             if self._detail_log_filename:
                 # 确保文件和目录存在
                 self._ensure_file_exists(self._detail_log_filename)
@@ -350,8 +383,8 @@ class FileManager:
             }
             self.db_manager.save_keys(rate_limited_keys, 'rate_limited', metadata)
         
-        # 如果使用文本文件存储或作为备份
-        if Config.STORAGE_TYPE == 'text' or not self.db_manager:
+        # 仅在使用文本文件存储时保存到文件
+        if Config.STORAGE_TYPE == 'text':
             # 保存详细信息到详细日志文件（新格式）
             if self._rate_limited_detail_filename:
                 # 确保文件和目录存在
@@ -418,8 +451,8 @@ class FileManager:
             }
             self.db_manager.save_keys(paid_keys, 'paid', metadata)
         
-        # 如果使用文本文件存储或作为备份
-        if Config.STORAGE_TYPE == 'text' or not self.db_manager:
+        # 仅在使用文本文件存储时保存到文件
+        if Config.STORAGE_TYPE == 'text':
             # 保存详细信息到详细日志文件
             if self._paid_keys_detail_filename:
                 # 确保文件和目录存在
@@ -439,11 +472,21 @@ class FileManager:
                     for key in paid_keys:
                         f.write(f"{key}\n")
 
-    def append_scanned_sha(self, sha: str) -> None:
-        """追加单个SHA到文件中"""
+    def append_scanned_sha(self, sha: str, repo_name: Optional[str] = None) -> None:
+        """追加单个SHA到数据库或文件中"""
         if not sha:
             return
 
+        # 如果使用数据库存储，保存到数据库
+        if Config.STORAGE_TYPE == 'sql' and self.db_manager:
+            try:
+                self.db_manager.add_scanned_sha(sha, repo_name)
+                return
+            except Exception as e:
+                logger.error(f"Failed to append SHA {sha} to database: {e}")
+                # 失败时回退到文件存储
+        
+        # text存储模式或数据库失败时，追加到文件
         try:
             with open(self.scanned_shas_file, "a", encoding="utf-8") as f:
                 f.write(f"{sha}\n")
@@ -456,6 +499,10 @@ class FileManager:
 
     def update_dynamic_filenames(self) -> None:
         """更新时间相关的文件名（例如每小时更新）"""
+        # 仅在使用文本存储时更新文件名
+        if Config.STORAGE_TYPE != 'text':
+            return
+        
         current_time = datetime.now()
         current_date_str = current_time.strftime('%Y%m%d')
         current_hour_str = current_time.strftime('%H')

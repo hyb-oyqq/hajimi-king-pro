@@ -36,6 +36,9 @@ skip_stats = {
     "doc_filter": 0
 }
 
+# 冷却状态标记
+is_in_cooldown = False
+
 
 def normalize_query(query: str) -> str:
     query = " ".join(query.split())
@@ -361,6 +364,7 @@ def reset_skip_stats():
 
 
 def main():
+    global is_in_cooldown
     start_time = datetime.now()
 
     # 打印系统启动信息
@@ -462,6 +466,13 @@ def main():
 
                 res = github_utils.search_for_keys(q)
 
+                # 检查是否是查询语法错误，如果是则跳过（不触发冷却）
+                if res and res.get("query_syntax_error"):
+                    logger.warning(t('query_syntax_error_skip', q, i, len(search_queries)))
+                    checkpoint.add_processed_query(normalized_q)
+                    file_manager.save_checkpoint(checkpoint)
+                    continue
+
                 if res and "items" in res:
                     items = res["items"]
                     if items:
@@ -491,7 +502,13 @@ def main():
                             query_processed += 1
 
                             # 记录已扫描的SHA
-                            checkpoint.add_scanned_sha(item.get("sha"))
+                            sha = item.get("sha")
+                            checkpoint.add_scanned_sha(sha)
+                            
+                            # 如果使用数据库存储，保存SHA到数据库（数据库会自动去重）
+                            if Config.STORAGE_TYPE == 'sql':
+                                repo_name = item.get("repository", {}).get("full_name", "")
+                                file_manager.append_scanned_sha(sha, repo_name)
 
                             loop_processed_files += 1
 
@@ -524,7 +541,9 @@ def main():
                     if cooldown_hours > 0:
                         cooldown_seconds = int(cooldown_hours * 3600)
                         logger.info(t('forced_cooldown_query', cooldown_hours, cooldown_seconds))
+                        is_in_cooldown = True
                         time.sleep(cooldown_seconds)
+                        is_in_cooldown = False
 
                 if query_count % 5 == 0:
                     logger.info(t('taking_break', query_count))
@@ -532,13 +551,27 @@ def main():
 
             logger.info(t('loop_complete', loop_count, loop_processed_files, total_keys_found, total_rate_limited_keys))
 
+            # SHA自动清理 - 每N轮循环后执行一次
+            if Config.parse_bool(Config.SHA_CLEANUP_ENABLED) and Config.STORAGE_TYPE == 'sql' and file_manager.db_manager:
+                if loop_count % Config.SHA_CLEANUP_INTERVAL_LOOPS == 0:
+                    try:
+                        logger.info(f"🗑️ 开始清理超过 {Config.SHA_CLEANUP_DAYS} 天的旧SHA记录...")
+                        sha_count_before = file_manager.db_manager.get_scanned_shas_count()
+                        deleted_count = file_manager.db_manager.clean_old_shas(Config.SHA_CLEANUP_DAYS)
+                        sha_count_after = file_manager.db_manager.get_scanned_shas_count()
+                        logger.info(f"🗑️ SHA清理完成: 删除 {deleted_count} 条，剩余 {sha_count_after} 条 (之前 {sha_count_before} 条)")
+                    except Exception as e:
+                        logger.error(f"SHA清理失败: {e}")
+
             # 强制冷却 - 每轮循环后
             if Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED):
                 cooldown_hours = Config.parse_cooldown_hours(Config.FORCED_COOLDOWN_HOURS_PER_LOOP)
                 if cooldown_hours > 0:
                     cooldown_seconds = int(cooldown_hours * 3600)
                     logger.info(t('forced_cooldown_loop', cooldown_hours, cooldown_seconds))
+                    is_in_cooldown = True
                     time.sleep(cooldown_seconds)
+                    is_in_cooldown = False
                 else:
                     logger.info(t('sleeping'))
                     time.sleep(10)

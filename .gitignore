@@ -84,3 +84,4 @@ results/
 *.backup
 *.orig
 queries.txt
+.env.docker

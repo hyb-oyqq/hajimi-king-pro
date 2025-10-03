@@ -700,6 +700,16 @@ class SyncUtils:
 
     def _batch_send_worker(self) -> None:
         """批量发送worker"""
+        # 检查是否处于冷却状态
+        try:
+            from app.hajimi_king import is_in_cooldown
+            if is_in_cooldown:
+                logger.info("❄️ 主线程正在冷却中，跳过本次批量发送")
+                return
+        except ImportError:
+            # 如果无法导入，继续执行
+            pass
+        
         while self.saving_checkpoint:
             logger.info(t('checkpoint_saving_batch_wait'))
             time.sleep(0.5)
