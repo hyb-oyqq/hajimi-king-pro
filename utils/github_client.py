@@ -131,6 +131,11 @@ class GitHubClient:
                             logger.warning(t('rate_limit_hit', status, attempt, max_retries, wait))
                         time.sleep(wait)
                         continue
+                    elif status == 422:
+                        # 查询语法错误（Unprocessable Entity）
+                        logger.error(t('query_syntax_error', query[:80], error_message))
+                        # 查询语法错误不需要重试，直接返回空结果
+                        return {"items": [], "total_count": 0}
                     elif status == 429:
                         # 明确的速率限制
                         rate_limit_hits += 1

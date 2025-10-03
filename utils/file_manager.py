@@ -318,6 +318,8 @@ class FileManager:
         # 如果使用文本文件存储或作为备份
         if Config.STORAGE_TYPE == 'text' or not self.db_manager:
             if self._detail_log_filename:
+                # 确保文件和目录存在
+                self._ensure_file_exists(self._detail_log_filename)
                 # 保存到详细日志文件
                 with open(self._detail_log_filename, "a", encoding="utf-8") as f:
                     f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -328,6 +330,8 @@ class FileManager:
 
             # 保存到keys_valid文件
             if self._keys_valid_filename:
+                # 确保文件和目录存在
+                self._ensure_file_exists(self._keys_valid_filename)
                 with open(self._keys_valid_filename, "a", encoding="utf-8") as f:
                     for key in valid_keys:
                         f.write(f"{key}\n")
@@ -350,6 +354,8 @@ class FileManager:
         if Config.STORAGE_TYPE == 'text' or not self.db_manager:
             # 保存详细信息到详细日志文件（新格式）
             if self._rate_limited_detail_filename:
+                # 确保文件和目录存在
+                self._ensure_file_exists(self._rate_limited_detail_filename)
                 with open(self._rate_limited_detail_filename, "a", encoding="utf-8") as f:
                     f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f.write(f"URL: {file_url}\n")
@@ -359,6 +365,8 @@ class FileManager:
 
             # 保存纯密钥到原有文件（只保存key）
             if self._rate_limited_filename:
+                # 确保文件和目录存在
+                self._ensure_file_exists(self._rate_limited_filename)
                 with open(self._rate_limited_filename, "a", encoding="utf-8") as f:
                     for key in rate_limited_keys:
                         f.write(f"{key}\n")
@@ -378,6 +386,8 @@ class FileManager:
 
         # 保存详细信息到详细日志文件
         if self._keys_send_detail_filename:
+            # 确保文件和目录存在
+            self._ensure_file_exists(self._keys_send_detail_filename)
             with open(self._keys_send_detail_filename, "a", encoding="utf-8") as f:
                 f.write(f"TIME: {timestamp}\n")
                 for key in keys:
@@ -387,6 +397,8 @@ class FileManager:
 
         # 保存简要信息到keys_send文件
         if self._keys_send_filename:
+            # 确保文件和目录存在
+            self._ensure_file_exists(self._keys_send_filename)
             with open(self._keys_send_filename, "a", encoding="utf-8") as f:
                 for key in keys:
                     result = send_result.get(key, "unknown")
@@ -410,6 +422,8 @@ class FileManager:
         if Config.STORAGE_TYPE == 'text' or not self.db_manager:
             # 保存详细信息到详细日志文件
             if self._paid_keys_detail_filename:
+                # 确保文件和目录存在
+                self._ensure_file_exists(self._paid_keys_detail_filename)
                 with open(self._paid_keys_detail_filename, "a", encoding="utf-8") as f:
                     f.write(f"TIME: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f.write(f"URL: {file_url}\n")
@@ -419,6 +433,8 @@ class FileManager:
 
             # 保存到paid_keys文件
             if self._paid_keys_filename:
+                # 确保文件和目录存在
+                self._ensure_file_exists(self._paid_keys_filename)
                 with open(self._paid_keys_filename, "a", encoding="utf-8") as f:
                     for key in paid_keys:
                         f.write(f"{key}\n")
