@@ -83,18 +83,78 @@ class GitHubClient:
                 except requests.exceptions.HTTPError as e:
                     status = e.response.status_code if e.response else None
                     failed_requests += 1
-                    if status in (403, 429):
+                    
+                    # 获取token显示（脱敏处理）
+                    token_display = current_token[:20] if current_token else "None"
+                    
+                    # 尝试从响应中提取详细错误信息
+                    error_message = "Unknown error"
+                    try:
+                        if e.response is not None:
+                            error_json = e.response.json()
+                            error_message = error_json.get('message', str(e))
+                        else:
+                            error_message = str(e)
+                    except:
+                        error_message = str(e)
+                    
+                    # 根据不同的状态码提供详细的错误信息
+                    if status == 401:
+                        # Token 无效
+                        logger.error(t('token_invalid', token_display, error_message))
+                        time.sleep(2 ** attempt)
+                        continue
+                    elif status == 403:
+                        # Token 被禁止或权限不足，可能是速率限制
                         rate_limit_hits += 1
+                        rate_limit_remaining = e.response.headers.get('X-RateLimit-Remaining', 'N/A')
+                        rate_limit_reset = e.response.headers.get('X-RateLimit-Reset', 'N/A')
+                        
+                        # 转换重置时间为可读格式
+                        if rate_limit_reset != 'N/A':
+                            try:
+                                from datetime import datetime
+                                reset_time = datetime.fromtimestamp(int(rate_limit_reset)).strftime('%Y-%m-%d %H:%M:%S')
+                            except:
+                                reset_time = rate_limit_reset
+                        else:
+                            reset_time = 'N/A'
+                        
+                        # 判断是否是速率限制
+                        if 'rate limit' in error_message.lower() or rate_limit_remaining == '0':
+                            logger.warning(t('token_rate_limited', token_display, rate_limit_remaining, reset_time))
+                        else:
+                            logger.error(t('token_forbidden', token_display, error_message))
+                        
                         wait = min(2 ** attempt + random.uniform(0, 1), 60)
-                        # 只在严重情况下记录详细日志
                         if attempt >= 3:
                             logger.warning(t('rate_limit_hit', status, attempt, max_retries, wait))
                         time.sleep(wait)
                         continue
+                    elif status == 429:
+                        # 明确的速率限制
+                        rate_limit_hits += 1
+                        rate_limit_remaining = e.response.headers.get('X-RateLimit-Remaining', '0')
+                        rate_limit_reset = e.response.headers.get('X-RateLimit-Reset', 'N/A')
+                        
+                        # 转换重置时间
+                        if rate_limit_reset != 'N/A':
+                            try:
+                                from datetime import datetime
+                                reset_time = datetime.fromtimestamp(int(rate_limit_reset)).strftime('%Y-%m-%d %H:%M:%S')
+                            except:
+                                reset_time = rate_limit_reset
+                        else:
+                            reset_time = 'N/A'
+                        
+                        logger.warning(t('token_rate_limited', token_display, rate_limit_remaining, reset_time))
+                        wait = min(2 ** attempt + random.uniform(0, 1), 60)
+                        time.sleep(wait)
+                        continue
                     else:
-                        # 其他HTTP错误，只在最后一次尝试时记录
+                        # 其他HTTP错误
                         if attempt == max_retries:
-                            logger.error(t('http_error', status, max_retries, page))
+                            logger.error(t('token_error_detail', status or 'None', token_display, error_message))
                         time.sleep(2 ** attempt)
                         continue
 
@@ -223,6 +283,59 @@ class GitHubClient:
             content_response.raise_for_status()
             return content_response.text
 
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response else None
+            token_display = token[:20] if token else "None"
+            
+            # 尝试从响应中提取详细错误信息
+            error_message = "Unknown error"
+            try:
+                if e.response is not None:
+                    error_json = e.response.json()
+                    error_message = error_json.get('message', str(e))
+                else:
+                    error_message = str(e)
+            except:
+                error_message = str(e)
+            
+            # 根据不同的状态码提供详细的错误信息
+            if status == 401:
+                logger.error(t('token_invalid', token_display, error_message))
+            elif status == 403:
+                rate_limit_remaining = e.response.headers.get('X-RateLimit-Remaining', 'N/A')
+                rate_limit_reset = e.response.headers.get('X-RateLimit-Reset', 'N/A')
+                
+                if rate_limit_reset != 'N/A':
+                    try:
+                        from datetime import datetime
+                        reset_time = datetime.fromtimestamp(int(rate_limit_reset)).strftime('%Y-%m-%d %H:%M:%S')
+                    except:
+                        reset_time = rate_limit_reset
+                else:
+                    reset_time = 'N/A'
+                
+                if 'rate limit' in error_message.lower() or rate_limit_remaining == '0':
+                    logger.warning(t('token_rate_limited', token_display, rate_limit_remaining, reset_time))
+                else:
+                    logger.error(t('token_forbidden', token_display, error_message))
+            elif status == 429:
+                rate_limit_remaining = e.response.headers.get('X-RateLimit-Remaining', '0')
+                rate_limit_reset = e.response.headers.get('X-RateLimit-Reset', 'N/A')
+                
+                if rate_limit_reset != 'N/A':
+                    try:
+                        from datetime import datetime
+                        reset_time = datetime.fromtimestamp(int(rate_limit_reset)).strftime('%Y-%m-%d %H:%M:%S')
+                    except:
+                        reset_time = rate_limit_reset
+                else:
+                    reset_time = 'N/A'
+                
+                logger.warning(t('token_rate_limited', token_display, rate_limit_remaining, reset_time))
+            else:
+                logger.error(t('token_error_detail', status or 'None', token_display, error_message))
+            
+            return None
         except requests.exceptions.RequestException as e:
             logger.error(t('fetch_file_failed', metadata_url, type(e).__name__))
             return None
