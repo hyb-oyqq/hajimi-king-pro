@@ -17,6 +17,7 @@ from google.api_core import exceptions as google_exceptions
 from common.Logger import logger
 from common.config import Config
 from common.translations import get_translator
+from common import state
 from utils.github_client import GitHubClient
 from utils.file_manager import file_manager, Checkpoint, checkpoint
 from utils.sync_utils import sync_utils
@@ -35,10 +36,6 @@ skip_stats = {
     "age_filter": 0,
     "doc_filter": 0
 }
-
-# 冷却状态标记
-is_in_cooldown = False
-
 
 def normalize_query(query: str) -> str:
     query = " ".join(query.split())
@@ -364,7 +361,6 @@ def reset_skip_stats():
 
 
 def main():
-    global is_in_cooldown
     start_time = datetime.now()
 
     # 打印系统启动信息
@@ -541,9 +537,24 @@ def main():
                     if cooldown_hours > 0:
                         cooldown_seconds = int(cooldown_hours * 3600)
                         logger.info(t('forced_cooldown_query', cooldown_hours, cooldown_seconds))
-                        is_in_cooldown = True
-                        time.sleep(cooldown_seconds)
-                        is_in_cooldown = False
+                        state.is_in_cooldown = True
+                        
+                        # 分段休眠，每60秒输出一次剩余时间
+                        remaining_seconds = cooldown_seconds
+                        interval = 60  # 每60秒更新一次
+                        
+                        while remaining_seconds > 0:
+                            if remaining_seconds <= interval:
+                                time.sleep(remaining_seconds)
+                                remaining_seconds = 0
+                            else:
+                                time.sleep(interval)
+                                remaining_seconds -= interval
+                                remaining_hours = remaining_seconds / 3600
+                                remaining_minutes = (remaining_seconds % 3600) / 60
+                                logger.info(f"❄️ 冷却中... 剩余时间: {remaining_hours:.2f} 小时 ({int(remaining_minutes)} 分钟 / {remaining_seconds} 秒)")
+                        
+                        state.is_in_cooldown = False
 
                 if query_count % 5 == 0:
                     logger.info(t('taking_break', query_count))
@@ -569,9 +580,24 @@ def main():
                 if cooldown_hours > 0:
                     cooldown_seconds = int(cooldown_hours * 3600)
                     logger.info(t('forced_cooldown_loop', cooldown_hours, cooldown_seconds))
-                    is_in_cooldown = True
-                    time.sleep(cooldown_seconds)
-                    is_in_cooldown = False
+                    state.is_in_cooldown = True
+                    
+                    # 分段休眠，每60秒输出一次剩余时间
+                    remaining_seconds = cooldown_seconds
+                    interval = 60  # 每60秒更新一次
+                    
+                    while remaining_seconds > 0:
+                        if remaining_seconds <= interval:
+                            time.sleep(remaining_seconds)
+                            remaining_seconds = 0
+                        else:
+                            time.sleep(interval)
+                            remaining_seconds -= interval
+                            remaining_hours = remaining_seconds / 3600
+                            remaining_minutes = (remaining_seconds % 3600) / 60
+                            logger.info(f"❄️ 冷却中... 剩余时间: {remaining_hours:.2f} 小时 ({int(remaining_minutes)} 分钟 / {remaining_seconds} 秒)")
+                    
+                    state.is_in_cooldown = False
                 else:
                     logger.info(t('sleeping'))
                     time.sleep(10)

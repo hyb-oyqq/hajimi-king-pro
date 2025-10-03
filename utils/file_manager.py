@@ -303,7 +303,7 @@ class FileManager:
         try:
             with open(self.checkpoint_file, "w", encoding="utf-8") as f:
                 json.dump(checkpoint.to_dict(), f, ensure_ascii=False, indent=2)
-            checkpoint = self.load_checkpoint()
+            # 移除不必要的重新加载，避免频繁读取数据库
         except Exception as e:
             logger.error(f"Failed to save {self.checkpoint_file}: {e}")
 

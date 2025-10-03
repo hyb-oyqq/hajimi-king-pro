@@ -159,46 +159,6 @@ AizaSy in:file filename:.env
 
 ---
 
-## 💾 数据库存储说明
-
-### 表结构
-
-系统使用单表设计，支持 SQLite/PostgreSQL/MySQL：
-
-- **keys表**：`id`, `api_key`(唯一), `key_type`, `repo_name`, `file_path`, `file_url`, `created_at`, `updated_at`
-- **密钥类型**：`valid`(免费) / `paid`(付费) / `rate_limited`(429) / `send`(已发送)
-
-### 配置示例
-
-```bash
-# SQLite（推荐）
-STORAGE_TYPE=sql
-DB_TYPE=sqlite
-SQLITE_DB_PATH=keys.db
-
-# PostgreSQL
-STORAGE_TYPE=sql
-DB_TYPE=postgresql
-POSTGRESQL_HOST=localhost
-POSTGRESQL_DATABASE=hajimi_keys
-POSTGRESQL_USER=postgres
-POSTGRESQL_PASSWORD=yourpassword
-
-# MySQL
-STORAGE_TYPE=sql
-DB_TYPE=mysql
-MYSQL_HOST=localhost
-MYSQL_DATABASE=hajimi_keys
-MYSQL_USER=root
-MYSQL_PASSWORD=yourpassword
-```
-
-### 数据迁移
-
-首次启用SQL存储时，系统自动检测并迁移历史文本文件到数据库，完成后备份并删除原文件。如需切换回文本存储，设置 `STORAGE_TYPE=text` 即可。
-
----
-
 ## 🔒 安全注意事项
 
 - GitHub Token权限最小化（只需`public_repo`读取权限）
