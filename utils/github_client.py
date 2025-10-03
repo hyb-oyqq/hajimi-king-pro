@@ -67,6 +67,7 @@ class GitHubClient:
                     total_requests += 1
                     # 获取随机proxy配置
                     proxies = Config.get_random_proxy()
+                    
                     if proxies:
                         response = requests.get(self.GITHUB_API_URL, headers=headers, params=params, timeout=30, proxies=proxies)
                     else:
@@ -77,6 +78,7 @@ class GitHubClient:
                         logger.warning(t('rate_limit_low', rate_limit_remaining, current_token))
                     response.raise_for_status()
                     page_result = response.json()
+                    
                     page_success = True
                     break
 
@@ -189,6 +191,9 @@ class GitHubClient:
             if page == 1:
                 total_count = page_result.get("total_count", 0)
                 expected_total = min(total_count, 1000)
+                
+                if total_count > 0:
+                    logger.info(f"   🔢 GitHub返回总数: {total_count} (预期获取: {expected_total})")
 
             items = page_result.get("items", [])
             current_page_count = len(items)

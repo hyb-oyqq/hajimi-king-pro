@@ -461,12 +461,16 @@ def main():
                     continue
 
                 res = github_utils.search_for_keys(q)
+                
+                # 标记是否需要冷却（默认需要）
+                should_cooldown = True
 
                 # 检查是否是查询语法错误，如果是则跳过（不触发冷却）
                 if res and res.get("query_syntax_error"):
                     logger.warning(t('query_syntax_error_skip', q, i, len(search_queries)))
                     checkpoint.add_processed_query(normalized_q)
                     file_manager.save_checkpoint(checkpoint)
+                    should_cooldown = False
                     continue
 
                 if res and "items" in res:
@@ -520,9 +524,15 @@ def main():
 
                         print_skip_stats()
                     else:
+                        # 无搜索结果，跳过冷却
+                        should_cooldown = False
                         logger.info(t('query_no_items', i, len(search_queries)))
+                        logger.info(f"⏭️  无搜索结果，跳过本次查询的强制冷却")
                 else:
+                    # 查询失败，跳过冷却
+                    should_cooldown = False
                     logger.warning(t('query_failed', i, len(search_queries)))
+                    logger.info(f"⏭️  查询失败，跳过本次查询的强制冷却")
 
                 checkpoint.add_processed_query(normalized_q)
                 query_count += 1
@@ -531,12 +541,12 @@ def main():
                 file_manager.save_checkpoint(checkpoint)
                 file_manager.update_dynamic_filenames()
 
-                # 强制冷却 - 每个查询后
-                if Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED):
+                # 强制冷却 - 每个查询后（只有在有结果时才冷却）
+                if Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED) and should_cooldown:
                     cooldown_hours = Config.parse_cooldown_hours(Config.FORCED_COOLDOWN_HOURS_PER_QUERY)
                     if cooldown_hours > 0:
-                        cooldown_seconds = int(cooldown_hours * 3600)
-                        logger.info(t('forced_cooldown_query', cooldown_hours, cooldown_seconds))
+                        cooldown_seconds = cooldown_hours * 3600  # 保留小数，支持更精确的时间
+                        logger.info(t('forced_cooldown_query', cooldown_hours, int(cooldown_seconds)))
                         state.is_in_cooldown = True
                         
                         # 分段休眠，每60秒输出一次剩余时间
@@ -578,8 +588,8 @@ def main():
             if Config.parse_bool(Config.FORCED_COOLDOWN_ENABLED):
                 cooldown_hours = Config.parse_cooldown_hours(Config.FORCED_COOLDOWN_HOURS_PER_LOOP)
                 if cooldown_hours > 0:
-                    cooldown_seconds = int(cooldown_hours * 3600)
-                    logger.info(t('forced_cooldown_loop', cooldown_hours, cooldown_seconds))
+                    cooldown_seconds = cooldown_hours * 3600  # 保留小数，支持更精确的时间
+                    logger.info(t('forced_cooldown_loop', cooldown_hours, int(cooldown_seconds)))
                     state.is_in_cooldown = True
                     
                     # 分段休眠，每60秒输出一次剩余时间
