@@ -89,12 +89,20 @@ def start_main_app():
         print("❌ 找不到 app/hajimi_king.py")
         return None
     
-    # 检查 .env 文件
-    env_file = project_root / ".env"
-    if not env_file.exists():
-        print("⚠️  未找到 .env 文件")
-        print("   请复制 env.example 为 .env 并配置必要参数")
-        return None
+    # 统一使用 /.env 作为配置文件路径（本地和容器环境一致）
+    env_file = Path("/.env")
+    in_docker = is_docker_environment()
+    
+    if env_file.exists():
+        print(f"✅ 找到配置文件: {env_file}")
+    else:
+        # Docker/K8s 环境：通过环境变量注入
+        if in_docker:
+            print("🐳 容器环境：使用环境变量配置")
+        else:
+            print("⚠️  未找到配置文件: /.env")
+            print("   请将 env.example 复制为 /.env 并配置必要参数")
+            return None
     
     # 主程序日志只写入文件，不输出到控制台
     # 使用 DEVNULL 抑制标准输出和标准错误
@@ -107,10 +115,6 @@ def start_main_app():
     
     print("✅ 主程序启动中（日志已重定向到文件，请在 Web 面板查看）...")
     return process
-
-
-
-
 def check_process_startup(process, name, timeout=3):
     """检查进程启动是否成功"""
     import time

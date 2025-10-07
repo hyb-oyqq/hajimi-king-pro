@@ -147,7 +147,22 @@ python web/start.py
 
 ## 📋 配置说明
 
-在项目根目录的 `.env` 文件中添加以下配置：
+### 配置文件位置
+
+**统一使用 `/.env` 作为配置文件路径**（本地和容器环境一致）
+
+```bash
+# 本地部署
+cp env.example /.env
+# 然后编辑 /.env 文件
+
+# 容器部署
+# 通过 ConfigMap 或 Volume 将配置文件挂载到 /.env
+```
+
+### 配置内容
+
+在 `/.env` 文件中添加以下配置：
 
 ```env
 # ==================== Web面板配置 ====================
@@ -313,8 +328,64 @@ docker stop hajimi-king-pro
 
 **注意**：
 - Docker 容器会自动运行 `start.py`，同时启动 Web 面板和主程序
+- 配置文件统一使用 `/.env` 路径
+  - Docker Compose: 通过 `env_file` 配置注入环境变量
+  - Kubernetes: 通过 ConfigMap 挂载到 `/.env`
 - 如果主程序启动失败（例如未配置 GitHub Token），Web 面板仍会继续运行
 - 所有日志都可以在 Web 面板的「日志」页面查看
+- 数据持久化：`./data` 目录会自动挂载到容器的 `/app/data`
+
+#### Kubernetes 部署示例
+
+如果使用 Kubernetes，可以通过 ConfigMap 挂载配置文件：
+
+```yaml
+# configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hajimi-king-config
+data:
+  .env: |
+    # ==================== GitHub 认证配置 ====================
+    GITHUB_TOKENS=ghp_xxxx,ghp_yyyy
+    GITHUB_SESSIONS=xxxxx
+    
+    # ==================== Web面板配置 ====================
+    WEB_PORT=5000
+    WEB_HOST=0.0.0.0
+    WEB_AUTH_KEY=your_secret_key_here
+    WEB_AUTH_ENABLED=true
+    
+    # ... 其他配置 ...
+
+---
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hajimi-king-pro
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - name: hajimi-king-pro
+        image: hajimi-king-pro:0.0.1
+        volumeMounts:
+        - name: config
+          mountPath: /.env
+          subPath: .env
+        - name: data
+          mountPath: /app/data
+      volumes:
+      - name: config
+        configMap:
+          name: hajimi-king-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: hajimi-king-data
+```
 
 ### 方式2: 使用 Systemd 服务
 
