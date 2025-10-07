@@ -264,14 +264,53 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
+  position: fixed !important;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 99;
+}
+
+/* 桌面端：顶部栏从侧边栏右侧开始 */
+@media (min-width: 992px) {
+  .ant-layout-header {
+    left: 200px;
+  }
 }
 
 .ant-layout-content {
   animation: fadeIn 0.6s ease-out;
+  margin-top: 64px !important;
 }
 
 .ant-layout-sider {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+  position: fixed !important;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+/* 桌面端：为主内容区添加左边距，避免被侧边栏遮挡 */
+@media (min-width: 992px) {
+  .ant-layout.ant-layout-has-sider > .ant-layout {
+    margin-left: 200px;
+  }
+}
+
+/* 移动端：主内容区无左边距 */
+@media (max-width: 991px) {
+  .ant-layout.ant-layout-has-sider > .ant-layout {
+    margin-left: 0 !important;
+  }
+}
+
+/* 侧边栏折叠时调整主内容区左边距 */
+.ant-layout-sider-collapsed + .ant-layout {
+  margin-left: 0 !important;
 }
 
 /* 菜单增强 */

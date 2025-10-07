@@ -317,15 +317,16 @@ def get_repo_stats():
 @app.route('/api/logs', methods=['GET'])
 @require_auth
 def get_logs():
-    """获取日志"""
+    """获取日志（仅主程序日志）"""
     try:
-        # 读取最新的日志文件
+        # 读取最新的主程序日志文件（排除web程序日志）
         log_dir = os.path.join(Config.DATA_PATH, 'logs')
         log_files = []
         
         if os.path.exists(log_dir):
             for filename in os.listdir(log_dir):
-                if filename.endswith('.log'):
+                # 只读取主程序日志，排除web程序日志（hajimi_king_pro_*.log）
+                if filename.endswith('.log') and not filename.startswith('hajimi_king_pro'):
                     file_path = os.path.join(log_dir, filename)
                     log_files.append((file_path, os.path.getmtime(file_path)))
         
@@ -345,7 +346,7 @@ def get_logs():
                 'total_lines': len(all_lines)
             })
         else:
-            return jsonify({'logs': '暂无日志', 'total_lines': 0})
+            return jsonify({'logs': '暂无主程序日志', 'total_lines': 0})
     except Exception as e:
         logger.error(f"获取日志失败: {e}")
         return jsonify({'error': str(e)}), 500
@@ -354,14 +355,15 @@ def get_logs():
 @app.route('/api/logs/live', methods=['GET'])
 @require_auth
 def get_live_logs():
-    """获取实时日志（最后100行）"""
+    """获取实时日志（最后100行，仅主程序日志）"""
     try:
         log_dir = os.path.join(Config.DATA_PATH, 'logs')
         if not os.path.exists(log_dir):
             return jsonify({'logs': []})
         
+        # 只读取主程序日志，排除web程序日志
         log_files = [(os.path.join(log_dir, f), os.path.getmtime(os.path.join(log_dir, f))) 
-                     for f in os.listdir(log_dir) if f.endswith('.log')]
+                     for f in os.listdir(log_dir) if f.endswith('.log') and not f.startswith('hajimi_king_pro')]
         
         if not log_files:
             return jsonify({'logs': []})
