@@ -91,13 +91,12 @@ def start_web_server():
                     "--worker-class", "sync",
                     "--timeout", "300",  # 增加超时时间
                     "--graceful-timeout", "300",
-                    "--keepalive", "5",
+                    "--keep-alive", "5",  # 正确的参数名称
                     "--max-requests", "1000",  # 定期重启worker避免内存泄漏
                     "--max-requests-jitter", "100",
                     "--log-level", "info",
                     "--access-logfile", "-",
                     "--error-logfile", "-",
-                    "--capture-output",
                     "web.api:app"
                 ],
                 cwd=str(project_root),
