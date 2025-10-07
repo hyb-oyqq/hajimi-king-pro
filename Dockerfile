@@ -1,3 +1,16 @@
+# ========== 阶段1: 构建前端 ==========
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+# 复制前端源码
+COPY web/frontend/package*.json ./
+RUN npm install
+
+COPY web/frontend/ ./
+RUN npm run build
+
+# ========== 阶段2: 构建最终镜像 ==========
 FROM registry-1.docker.io/library/python:3.11-slim
 
 # 设置工作目录
@@ -26,6 +39,9 @@ RUN uv pip install --system --no-cache -r pyproject.toml
 
 # 复制应用代码
 COPY . .
+
+# 从前端构建阶段复制构建好的文件
+COPY --from=frontend-builder /frontend/dist /app/web/dist
 
 # 启动命令（使用 start.py 同时启动 Web 和主程序）
 CMD ["python", "start.py"]

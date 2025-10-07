@@ -248,48 +248,27 @@ X-Auth-Key: your_secret_key_here
 
 ### 方式1: 使用 Docker（推荐）
 
-#### 快速部署（一键脚本）
+#### 部署步骤（非常简单）
 
-**Linux/Mac:**
-```bash
-# 赋予执行权限
-chmod +x deploy_docker.sh
+**1. 配置环境变量**
 
-# 运行部署脚本
-./deploy_docker.sh
-```
-
-**Windows:**
-```bash
-# 直接运行
-deploy_docker.bat
-```
-
-脚本会自动：
-- ✅ 检查 .env 文件
-- ✅ 检查并构建前端（如果需要）
-- ✅ 构建 Docker 镜像
-- ✅ 启动容器
-
-#### 手动部署步骤
-
-1. **构建前端**（首次部署或前端更新后需要）：
-```bash
-cd web/frontend
-npm install
-npm run build
-cd ../..
-```
-
-2. **配置环境变量**：
 确保 `.env` 文件已配置好所有必要参数
 
-3. **构建镜像**：
+**2. 构建镜像**
+
 ```bash
+# Docker 会自动构建前端，无需手动构建
 docker build -t hajimi-king-pro:0.0.1 .
 ```
 
-4. **启动容器**：
+镜像构建过程会自动：
+- ✅ 安装前端依赖
+- ✅ 构建前端 (React + Vite)
+- ✅ 安装 Python 依赖
+- ✅ 打包所有文件
+
+**3. 启动容器**
+
 ```bash
 # 使用 docker-compose（推荐）
 docker-compose up -d
