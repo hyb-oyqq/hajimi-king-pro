@@ -61,6 +61,26 @@ def check_frontend_build():
     return True
 
 
+def check_web_auth_key():
+    """检查 Web 认证密钥"""
+    from dotenv import load_dotenv
+    load_dotenv()
+    web_auth_key = os.getenv('WEB_AUTH_KEY', '')
+    
+    if not web_auth_key or web_auth_key == 'your_secret_key_here':
+        print("\n" + "=" * 60)
+        print("❌ Web 面板认证密钥未配置")
+        print("=" * 60)
+        print("\n启用 Web 面板时，必须配置有效的 WEB_AUTH_KEY。")
+        print("\n请在 .env 文件中设置 WEB_AUTH_KEY：")
+        print("  WEB_AUTH_KEY=your_strong_password")
+        print("\n" + "=" * 60)
+        return False
+    
+    print(f"✅ Web 认证密钥已配置")
+    return True
+
+
 def start_web_server():
     """启动 Web 管理面板"""
     print("\n🌐 启动 Web 管理面板...")
@@ -203,35 +223,79 @@ def main():
     if not check_dependencies():
         sys.exit(1)
     
-    # 检查前端构建
-    if not check_frontend_build():
-        sys.exit(1)
+    # 检查是否启用 Web 面板
+    from dotenv import load_dotenv
+    load_dotenv()
+    web_panel_enabled = os.getenv('WEB_PANEL_ENABLED', 'true').lower() in ('true', '1', 'yes')
     
-    # 启动 Web 服务器
-    web_process = start_web_server()
-    if web_process:
-        processes.append(web_process)
-        if not check_process_startup(web_process, "Web服务器", timeout=3):
-            signal_handler(None, None)
+    if web_panel_enabled:
+        print("\n🌐 Web 面板模式已启用")
+        
+        # 检查认证密钥
+        if not check_web_auth_key():
+            sys.exit(1)
+        
+        # 检查前端构建
+        if not check_frontend_build():
+            sys.exit(1)
+        
+        # 启动 Web 服务器
+        web_process = start_web_server()
+        if web_process:
+            processes.append(web_process)
+            if not check_process_startup(web_process, "Web服务器", timeout=3):
+                signal_handler(None, None)
+                sys.exit(1)
+        else:
+            print("❌ Web 服务器启动失败")
             sys.exit(1)
     else:
-        print("❌ Web 服务器启动失败")
-        sys.exit(1)
+        print("\n📊 仅主程序模式（Web 面板已禁用）")
     
     # 启动主程序
-    app_process = start_main_app()
-    if app_process:
-        processes.append(app_process)
-        if not check_process_startup(app_process, "主程序", timeout=5):
-            print("\n❌ 主程序启动失败")
+    if web_panel_enabled:
+        # Web 面板模式：主程序日志重定向到文件，控制台只显示 Web 日志
+        app_process = start_main_app()
+        if app_process:
+            processes.append(app_process)
+            if not check_process_startup(app_process, "主程序", timeout=5):
+                print("\n❌ 主程序启动失败")
+                print("\n" + "=" * 60)
+                print("⚠️  主程序启动失败，但 Web 面板仍在运行")
+                print("=" * 60)
+                
+                # 在 Docker 环境中自动继续，不等待用户输入
+                if in_docker:
+                    # 移除失败的主程序进程
+                    processes.pop()
+                    print("\n✅ Docker 环境：自动继续运行 Web 面板...")
+                else:
+                    print("\n💡 选项:")
+                    print("   1. 按 Enter 继续（仅运行 Web 面板）")
+                    print("   2. 按 Ctrl+C 停止所有服务")
+                    print()
+                    
+                    try:
+                        input("请选择操作: ")
+                        # 移除失败的主程序进程
+                        processes.pop()
+                        print("\n✅ 继续运行 Web 面板...")
+                    except KeyboardInterrupt:
+                        print("\n")
+                        signal_handler(None, None)
+                        sys.exit(1)
+        else:
+            print("\n❌ 主程序无法启动（配置问题或其他错误）")
             print("\n" + "=" * 60)
             print("⚠️  主程序启动失败，但 Web 面板仍在运行")
             print("=" * 60)
+            print("\n💡 调试建议:")
+            print(f"   1. 确保配置文件存在: {project_root / '.env'}")
+            print("   2. 单独运行主程序查看详细错误: python app/hajimi_king.py")
+            print("   3. 检查 GITHUB_TOKENS 或 GITHUB_SESSION 是否配置")
             
             # 在 Docker 环境中自动继续，不等待用户输入
             if in_docker:
-                # 移除失败的主程序进程
-                processes.pop()
                 print("\n✅ Docker 环境：自动继续运行 Web 面板...")
             else:
                 print("\n💡 选项:")
@@ -241,41 +305,57 @@ def main():
                 
                 try:
                     input("请选择操作: ")
-                    # 移除失败的主程序进程
-                    processes.pop()
                     print("\n✅ 继续运行 Web 面板...")
                 except KeyboardInterrupt:
                     print("\n")
                     signal_handler(None, None)
                     sys.exit(1)
     else:
-        print("\n❌ 主程序无法启动（配置问题或其他错误）")
-        print("\n" + "=" * 60)
-        print("⚠️  主程序启动失败，但 Web 面板仍在运行")
-        print("=" * 60)
-        print("\n💡 调试建议:")
-        print(f"   1. 确保配置文件存在: {project_root / '.env'}")
-        print("   2. 单独运行主程序查看详细错误: python app/hajimi_king.py")
-        print("   3. 检查 GITHUB_TOKENS 或 GITHUB_SESSION 是否配置")
+        # 仅主程序模式：主程序日志直接输出到控制台
+        app_script = project_root / "app" / "hajimi_king.py"
         
-        # 在 Docker 环境中自动继续，不等待用户输入
+        if not app_script.exists():
+            print("❌ 找不到 app/hajimi_king.py")
+            sys.exit(1)
+        
+        # 环境变量文件路径
         if in_docker:
-            print("\n✅ Docker 环境：自动继续运行 Web 面板...")
+            env_file = Path("/.env")
         else:
-            print("\n💡 选项:")
-            print("   1. 按 Enter 继续（仅运行 Web 面板）")
-            print("   2. 按 Ctrl+C 停止所有服务")
-            print()
-            
-            try:
-                input("请选择操作: ")
-                print("\n✅ 继续运行 Web 面板...")
-            except KeyboardInterrupt:
-                print("\n")
+            env_file = project_root / ".env"
+        
+        if env_file.exists():
+            print(f"✅ 找到配置文件: {env_file}")
+        else:
+            # Docker/K8s 环境：通过环境变量注入
+            if in_docker:
+                print("🐳 容器环境：使用环境变量配置")
+            else:
+                print(f"⚠️  未找到配置文件: {env_file}")
+                print(f"   请将 env.example 复制为 {env_file} 并配置必要参数")
+                sys.exit(1)
+        
+        print("\n🚀 启动主程序...")
+        # 主程序日志直接输出到控制台
+        app_process = subprocess.Popen(
+            [sys.executable, str(app_script)],
+            cwd=str(project_root),
+            stdout=sys.stdout,
+            stderr=sys.stderr
+        )
+        
+        if app_process:
+            processes.append(app_process)
+            if not check_process_startup(app_process, "主程序", timeout=5):
+                print("\n❌ 主程序启动失败")
                 signal_handler(None, None)
                 sys.exit(1)
+        else:
+            print("❌ 主程序启动失败")
+            sys.exit(1)
     
-        print("\n" + "=" * 60)
+    print("\n" + "=" * 60)
+    if web_panel_enabled:
         if len(processes) == 2:
             print("✅ 所有服务已启动！")
             print("=" * 60)
@@ -289,9 +369,17 @@ def main():
             print("=" * 60)
             print("\n📊 Web 面板: http://localhost:5000")
             print("⚠️  主程序: 未运行")
-        print("\n按 Ctrl+C 停止所有服务")
+    else:
+        print("✅ 主程序已启动！")
         print("=" * 60)
-        print()
+        print("\n🔑 主程序: 正在运行")
+        print("⚠️  Web 面板: 未启用")
+        print("\n💡 提示:")
+        print("   • 主程序日志会显示在此控制台")
+        print("   • 如需启用 Web 面板，请在 .env 中设置 WEB_PANEL_ENABLED=true")
+    print("\n按 Ctrl+C 停止所有服务")
+    print("=" * 60)
+    print()
     
     # 监控进程
     try:
@@ -299,18 +387,24 @@ def main():
             # 检查进程是否还在运行
             for i, process in enumerate(processes):
                 if process.poll() is not None:
-                    service_name = "Web服务器" if i == 0 else "主程序"
-                    print(f"\n⚠️  {service_name} 意外退出，退出码: {process.returncode}")
-                    
-                    # 如果是 Web 服务器退出，停止所有
-                    if i == 0:
+                    if web_panel_enabled:
+                        service_name = "Web服务器" if i == 0 else "主程序"
+                        print(f"\n⚠️  {service_name} 意外退出，退出码: {process.returncode}")
+                        
+                        # 如果是 Web 服务器退出，停止所有
+                        if i == 0:
+                            signal_handler(None, None)
+                            sys.exit(1)
+                        # 如果是主程序退出，只提示但继续运行 Web
+                        else:
+                            print("   Web 面板仍在运行，按 Ctrl+C 停止")
+                            processes.pop(i)
+                            break
+                    else:
+                        # 仅主程序模式，主程序退出则全部停止
+                        print(f"\n⚠️  主程序意外退出，退出码: {process.returncode}")
                         signal_handler(None, None)
                         sys.exit(1)
-                    # 如果是主程序退出，只提示但继续运行 Web
-                    else:
-                        print("   Web 面板仍在运行，按 Ctrl+C 停止")
-                        processes.pop(i)
-                        break
             
             time.sleep(1)
     except KeyboardInterrupt:

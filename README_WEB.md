@@ -1,447 +1,598 @@
-# Hajimi King Pro - Web 管理面板
+# Hajimi King Pro - Web 管理面板 API 文档
 
-这是一个基于 React + Flask 的 Web 管理面板，用于管理和监控 Hajimi King Pro 密钥抓取系统。
+Web 管理面板提供基于 REST API 的可视化管理界面，用于监控和管理 Hajimi King Pro 密钥抓取系统。
 
 ## 📋 目录
 
-- [功能特性](#功能特性)
 - [快速开始](#快速开始)
-- [配置说明](#配置说明)
-- [开发模式](#开发模式)
-- [生产部署](#生产部署)
+- [环境变量配置](#环境变量配置)
 - [API 接口说明](#api-接口说明)
+- [认证机制](#认证机制)
+- [部署方式](#部署方式)
 - [技术栈](#技术栈)
-- [故障排除](#故障排除)
 
-## 功能特性
-
-### 1. 仪表盘 (Dashboard)
-- 📊 显示密钥总数、有效数、限流数、付费数
-- 📈 展示相较于昨日、上周、上月的增长/降低数据
-- 📅 单独展示今日密钥统计（总数、有效、限流、付费）
-- 🔄 数据每30秒自动刷新
-
-### 2. 密钥管理 (Keys Management)
-- 🔍 查看所有已获取的密钥
-- 🔎 按类型、关键词搜索密钥
-- 📄 分页显示，支持每页50/100/200条
-- 🗑️ 删除指定密钥
-- 📋 查看密钥详细信息（来源仓库、文件路径等）
-
-### 3. 统计分析 (Analytics)
-- 📉 密钥获取趋势图（可选7/14/30/60/90天）
-- 📊 Top仓库统计柱状图
-- 🎯 密钥类型分布饼图
-- 📈 多维度数据可视化
-
-### 4. 日志 (Logs)
-- 📝 查看实时抓取日志
-- 🔄 自动刷新（每3秒）
-- 💾 下载日志到本地
-- 📄 显示最近500行日志
-
-### 5. 规则编辑 (Rules)
-- ➕ 添加新的搜索规则
-- 🗑️ 删除现有规则
-- 🔍 搜索规则
-- ⚡ 热重启功能（新规则即时生效）
-
-### 6. 设置 (Settings)
-- 🔧 查看系统配置
-- 🔑 管理 GitHub Tokens
-- 🌐 管理 GitHub Sessions
-- ➕ 添加/删除 Token 和 Session
-
-## ✅ 已完成的重构
-
-### 1. 创建了统一的启动脚本
-
-#### 📦 `start.py` (项目根目录)
-**用途**: 生产环境，同时启动 Web 面板和主程序
-
-```bash
-python start.py
-```
-
-**功能**:
-- ✅ 自动检查依赖
-- ✅ 同时启动 Web 服务器和主程序
-- ✅ 统一的进程管理
-- ✅ 优雅的停止机制（Ctrl+C）
-- ✅ 进程监控和自动重启
-
-#### 🔧 `web/start.py`
-**用途**: 开发环境，单独启动 Web 面板测试
-
-```bash
-python web/start.py
-```
-
-**功能**:
-- ✅ 自动检查并安装 Python 依赖
-- ✅ 自动检查并安装前端依赖
-- ✅ 自动构建前端（如果需要）
-- ✅ 启动 Web 服务器
-- ✅ 跨平台支持（Windows/Linux/Mac）
-
-### 2. 删除了旧脚本
-
-- ❌ `start_web.sh` - 已删除
-- ❌ `start_web.bat` - 已删除  
-- ❌ `install_web_deps.bat` - 已删除
-
-### 3. 精简了文档
-
-**已合并文档**:
-- ✅ 所有 Web 面板文档已整合到本文件
+---
 
 ## 🚀 快速开始
 
-### 准备工作
+### 启动方式
 
-首次使用需要安装依赖：
-
+**生产环境（推荐）**
 ```bash
-# 方式1: 使用 pip（推荐）
-pip install -r requirements.txt
-
-# 方式2: 使用 uv（更快）
-uv sync
-```
-
-### 方式1: 生产环境（推荐）
-
-同时启动 Web 面板和主程序：
-
-```bash
-# 1. 确保已安装依赖
-# 2. 配置 .env 文件（添加 Web 配置）
-# 3. 运行启动脚本
+# 同时启动 Web 面板和主程序
 python start.py
-
-# 访问 Web 面板: http://localhost:5000
 ```
 
-脚本会自动：
-- ✅ 检查 Python 依赖
-- ✅ 同时启动 Web 服务器和主程序
-- ✅ 统一的进程管理
-- ✅ 优雅的停止机制（Ctrl+C）
-
-### 方式2: 开发环境（仅 Web 面板）
-
-单独启动 Web 面板进行测试：
-
+**开发环境（仅 Web 面板）**
 ```bash
-# 安装依赖后运行
+# 单独启动 Web 面板
 python web/start.py
-
-# 访问 Web 面板: http://localhost:5000
 ```
 
-脚本会自动：
-- ✅ 检查 Python 依赖
-- ✅ 检查并安装前端依赖  
-- ✅ 构建前端（如果需要）
-- ✅ 启动 Web 服务器
-
-## 📋 配置说明
-
-### 配置文件位置
-
-**统一使用 `/.env` 作为配置文件路径**（本地和容器环境一致）
-
-```bash
-# 本地部署
-cp env.example /.env
-# 然后编辑 /.env 文件
-
-# 容器部署
-# 通过 ConfigMap 或 Volume 将配置文件挂载到 /.env
+**访问地址**
+```
+http://localhost:5000
 ```
 
-### 配置内容
+---
 
-在 `/.env` 文件中添加以下配置：
+## ⚙️ 环境变量配置
 
+在 `.env` 文件中配置以下参数：
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `WEB_PORT` | `5000` | Web 服务监听端口 |
+| `WEB_HOST` | `0.0.0.0` | Web 服务监听地址（0.0.0.0=所有网卡，127.0.0.1=仅本地） |
+| `WEB_AUTH_KEY` | 空 | Web 面板认证密钥（请设置强密码） |
+| `WEB_AUTH_ENABLED` | `true` | 是否启用认证（生产环境必须启用） |
+
+**配置示例**
 ```env
 # ==================== Web面板配置 ====================
-# Web服务端口
 WEB_PORT=5000
-
-# Web服务监听地址 (0.0.0.0表示所有网卡，127.0.0.1仅本地访问)
 WEB_HOST=0.0.0.0
-
-# Web认证密钥 (用于访问面板，请设置一个强密码)
 WEB_AUTH_KEY=your_secret_key_here
-
-# 是否启用认证 (生产环境建议设置为true)
 WEB_AUTH_ENABLED=true
 ```
 
-### 认证说明
+---
 
-#### 启用认证
-在 `.env` 中设置：
-```env
-WEB_AUTH_ENABLED=true
-WEB_AUTH_KEY=your_secret_key_here
+## 🔐 认证机制
+
+### 认证方式
+
+所有需要认证的 API 请求支持以下两种方式：
+
+**方式1：请求头认证（推荐）**
+```http
+X-Auth-Key: your_secret_key_here
 ```
 
-#### 禁用认证（仅开发环境）
+**方式2：URL 参数认证**
+```http
+GET /api/keys?auth_key=your_secret_key_here
+```
+
+### 禁用认证（仅开发环境）
+
 ```env
 WEB_AUTH_ENABLED=false
 ```
 
-**警告：** 生产环境请务必启用认证！
+> ⚠️ **警告**：生产环境请务必启用认证！
 
-## 🔧 开发模式
-
-如果需要开发和调试前端：
-
-### 1. 启动后端 API
-```bash
-python web/api.py
-```
-
-### 2. 启动前端开发服务器
-```bash
-cd web/frontend
-npm run dev
-```
-
-前端开发服务器会在 http://localhost:3000 启动，并自动代理 API 请求到后端。
+---
 
 ## 📊 API 接口说明
 
-所有 API 请求需要在 Header 中携带认证密钥：
+### 1. 仪表盘 API
+
+#### `GET /api/dashboard/stats`
+获取仪表盘统计数据
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "total": {
+    "count": 1250,
+    "yesterday_change": 50,
+    "last_week_change": 300,
+    "last_month_change": 800
+  },
+  "valid": {
+    "count": 850,
+    "yesterday_change": 30,
+    "last_week_change": 200,
+    "last_month_change": 550
+  },
+  "rate_limited": {
+    "count": 300,
+    "yesterday_change": 15,
+    "last_week_change": 80,
+    "last_month_change": 200
+  },
+  "paid": {
+    "count": 100,
+    "yesterday_change": 5,
+    "last_week_change": 20,
+    "last_month_change": 50
+  },
+  "today": {
+    "total": 50,
+    "valid": 30,
+    "rate_limited": 15,
+    "paid": 5
+  }
+}
 ```
-X-Auth-Key: your_secret_key_here
+
+---
+
+### 2. 密钥管理 API
+
+#### `GET /api/keys`
+获取密钥列表（支持分页、搜索、过滤）
+
+**认证**：需要
+
+**查询参数**
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `type` | string | 密钥类型（valid/rate_limited/paid） | 不过滤 |
+| `page` | int | 页码 | 1 |
+| `page_size` | int | 每页数量 | 50 |
+| `search` | string | 搜索关键词（搜索密钥或仓库名） | 空 |
+
+**请求示例**
+```http
+GET /api/keys?type=valid&page=1&page_size=50&search=gemini
 ```
 
-### 主要接口
+**响应示例**
+```json
+{
+  "total": 850,
+  "page": 1,
+  "page_size": 50,
+  "data": [
+    {
+      "id": 1,
+      "api_key": "AIzaSy***************************",
+      "key_type": "valid",
+      "repo_name": "username/repo-name",
+      "file_path": "config/.env",
+      "sha": "abc123...",
+      "created_at": "2025-01-06T10:30:00"
+    }
+  ]
+}
+```
 
-- `GET /api/dashboard/stats` - 获取仪表盘统计
-- `GET /api/keys` - 获取密钥列表
-- `GET /api/analytics/trend` - 获取趋势数据
-- `GET /api/logs` - 获取日志
-- `GET /api/rules` - 获取搜索规则
-- `POST /api/rules` - 添加搜索规则
-- `GET /api/settings` - 获取系统设置
-- `POST /api/settings/github-tokens` - 添加 GitHub Token
+#### `DELETE /api/keys/<key_id>`
+删除指定密钥
 
-完整 API 文档请查看 `web/api.py` 源码。
+**认证**：需要
+
+**路径参数**
+- `key_id`: 密钥ID
+
+**响应示例**
+```json
+{
+  "success": true
+}
+```
+
+---
+
+### 3. 统计分析 API
+
+#### `GET /api/analytics/trend`
+获取密钥趋势统计数据
+
+**认证**：需要
+
+**查询参数**
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `days` | int | 统计天数 | 30 |
+
+**请求示例**
+```http
+GET /api/analytics/trend?days=30
+```
+
+**响应示例**
+```json
+{
+  "data": [
+    {
+      "date": "2025-01-01",
+      "total": 45,
+      "valid": 30,
+      "rate_limited": 12,
+      "paid": 3
+    },
+    {
+      "date": "2025-01-02",
+      "total": 52,
+      "valid": 35,
+      "rate_limited": 14,
+      "paid": 3
+    }
+  ]
+}
+```
+
+#### `GET /api/analytics/repo-stats`
+获取仓库统计数据（Top 50）
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "data": [
+    {
+      "repo": "username/repo-name",
+      "total": 150,
+      "valid": 100,
+      "rate_limited": 40,
+      "paid": 10
+    }
+  ]
+}
+```
+
+---
+
+### 4. 日志 API
+
+#### `GET /api/logs`
+获取主程序日志
+
+**认证**：需要
+
+**查询参数**
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `lines` | int | 读取行数 | 200 |
+
+**响应示例**
+```json
+{
+  "logs": "2025-01-06 10:30:00 - INFO - 开始搜索...\n...",
+  "total_lines": 1500
+}
+```
+
+#### `GET /api/logs/live`
+获取实时日志（最后 100 行）
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "logs": [
+    "2025-01-06 10:30:00 - INFO - 开始搜索...",
+    "2025-01-06 10:30:05 - INFO - 发现新密钥..."
+  ]
+}
+```
+
+---
+
+### 5. 规则管理 API
+
+#### `GET /api/rules`
+获取所有搜索规则
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "data": [
+    "AIzaSy in:file",
+    "AizaSy in:file filename:.env"
+  ],
+  "total": 2
+}
+```
+
+#### `POST /api/rules`
+添加新的搜索规则
+
+**认证**：需要
+
+**请求体**
+```json
+{
+  "rule": "AIzaSy in:file filename:config"
+}
+```
+
+**响应示例**
+```json
+{
+  "success": true,
+  "message": "规则添加成功"
+}
+```
+
+#### `DELETE /api/rules/<index>`
+删除指定索引的规则
+
+**认证**：需要
+
+**路径参数**
+- `index`: 规则索引（从 0 开始）
+
+**响应示例**
+```json
+{
+  "success": true,
+  "message": "规则删除成功"
+}
+```
+
+#### `POST /api/system/restart`
+重启系统（热重启）
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "success": true,
+  "message": "重启信号已发送"
+}
+```
+
+---
+
+### 6. 设置管理 API
+
+#### `GET /api/settings`
+获取系统设置
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "github_auth_mode": "token",
+  "github_tokens": 2,
+  "github_sessions": 0,
+  "storage_type": "sql",
+  "db_type": "sqlite",
+  "date_range_days": 730,
+  "language": "zh_cn",
+  "proxy_count": 0,
+  "balancer_enabled": false,
+  "gpt_load_enabled": false,
+  "forced_cooldown_enabled": false,
+  "sha_cleanup_enabled": true,
+  "forced_cooldown_hours_per_query": 0,
+  "forced_cooldown_hours_per_loop": 0,
+  "sha_cleanup_days": 7,
+  "sha_cleanup_interval_loops": 10,
+  "key_validator_max_workers": 5,
+  "rate_limited_handling": "save_only",
+  "hajimi_check_model": "gemini-2.5-flash",
+  "hajimi_paid_model": "gemini-2.5-pro-preview-03-25",
+  "gpt_load_paid_enabled": false,
+  "gpt_load_group_name": "",
+  "gpt_load_paid_group_name": "",
+  "gpt_load_rate_limited_group_name": ""
+}
+```
+
+#### `GET /api/settings/github-tokens`
+获取 GitHub Tokens 列表（脱敏显示）
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "data": [
+    {
+      "index": 0,
+      "token": "ghp_xxxx***xxxx",
+      "full_length": 40
+    }
+  ]
+}
+```
+
+#### `POST /api/settings/github-tokens`
+添加 GitHub Token
+
+**认证**：需要
+
+**请求体**
+```json
+{
+  "token": "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
+```
+
+**响应示例**
+```json
+{
+  "success": true,
+  "message": "Token添加成功，请重启服务生效"
+}
+```
+
+#### `DELETE /api/settings/github-tokens/<index>`
+删除指定的 GitHub Token
+
+**认证**：需要
+
+**路径参数**
+- `index`: Token 索引（从 0 开始）
+
+**响应示例**
+```json
+{
+  "success": true,
+  "message": "Token删除成功，请重启服务生效"
+}
+```
+
+#### `GET /api/settings/github-sessions`
+获取 GitHub Sessions 列表（脱敏显示）
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "data": [
+    {
+      "index": 0,
+      "session": "session_xx***xx",
+      "full_length": 128
+    }
+  ]
+}
+```
+
+#### `POST /api/settings/github-sessions`
+添加 GitHub Session
+
+**认证**：需要
+
+**请求体**
+```json
+{
+  "session": "user_session_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
+```
+
+**响应示例**
+```json
+{
+  "success": true,
+  "message": "Session添加成功，请重启服务生效"
+}
+```
+
+#### `DELETE /api/settings/github-sessions/<index>`
+删除指定的 GitHub Session
+
+**认证**：需要
+
+**路径参数**
+- `index`: Session 索引（从 0 开始）
+
+**响应示例**
+```json
+{
+  "success": true,
+  "message": "Session删除成功，请重启服务生效"
+}
+```
+
+---
+
+### 7. 系统状态 API
+
+#### `GET /health`
+健康检查端点
+
+**认证**：❌ 不需要
+
+**响应示例**
+```json
+{
+  "status": "healthy",
+  "service": "hajimi-king-web",
+  "timestamp": "2025-01-06T10:30:00"
+}
+```
+
+#### `GET /api/system/status`
+获取系统运行状态
+
+**认证**：需要
+
+**响应示例**
+```json
+{
+  "is_running": true,
+  "is_in_cooldown": false,
+  "db_type": "sqlite",
+  "storage_type": "sql",
+  "db_connected": true
+}
+```
+
+---
+
+## 🐳 部署方式
+
+### 方式1: Docker 部署（推荐）
+
+```bash
+# 1. 构建镜像
+docker build -t hajimi-king-pro:latest .
+
+# 2. 启动容器
+docker-compose up -d
+
+# 3. 查看日志
+docker logs -f hajimi-king-pro
+```
+
+### 方式2: Systemd 服务
+
+```bash
+# 1. 创建服务文件
+sudo nano /etc/systemd/system/hajimi-king.service
+
+# 2. 启动服务
+sudo systemctl enable hajimi-king
+sudo systemctl start hajimi-king
+
+# 3. 查看状态
+sudo systemctl status hajimi-king
+```
+
+### 方式3: 直接运行
+
+```bash
+# 生产环境（Web + 主程序）
+python start.py
+
+# 开发环境（仅 Web）
+python web/start.py
+```
+
+---
 
 ## 💻 技术栈
 
 ### 后端
-- Flask 3.0+ - Web框架
-- Flask-CORS - 跨域支持
-- Python-dotenv - 环境变量管理
+- **Flask** 3.0+ - Web 框架
+- **Flask-CORS** - 跨域支持
+- **Python-dotenv** - 环境变量管理
 
 ### 前端
-- React 18 - UI框架
-- Ant Design 5 - UI组件库
-- Recharts - 数据可视化
-- Axios - HTTP客户端
-- React Router - 路由管理
-- Vite - 构建工具
-
-## 🎯 脚本对比
-
-| 功能 | `start.py` | `web/start.py` |
-|------|-----------|---------------|
-| 启动位置 | 项目根目录 | web 目录 |
-| 用途 | 生产环境 | 开发环境 |
-| Web 面板 | ✅ | ✅ |
-| 主程序 | ✅ | ❌ |
-| 自动安装依赖 | ❌ | ✅ |
-| 自动构建前端 | ❌ | ✅ |
-| 进程监控 | ✅ | ❌ |
-
-## 🐳 生产部署
-
-### 方式1: 使用 Docker（推荐）
-
-#### 部署步骤（非常简单）
-
-**1. 配置环境变量**
-
-确保 `.env` 文件已配置好所有必要参数
-
-**2. 构建镜像**
-
-```bash
-# Docker 会自动构建前端，无需手动构建
-docker build -t hajimi-king-pro:0.0.1 .
-```
-
-镜像构建过程会自动：
-- ✅ 安装前端依赖
-- ✅ 构建前端 (React + Vite)
-- ✅ 安装 Python 依赖
-- ✅ 打包所有文件
-
-**3. 启动容器**
-
-```bash
-# 使用 docker-compose（推荐）
-docker-compose up -d
-
-# 或使用 docker run
-docker run -d \
-  --name hajimi-king-pro \
-  --network host \
-  --restart unless-stopped \
-  --env-file .env \
-  -v $(pwd)/data:/app/data \
-  hajimi-king-pro:0.0.1
-```
-
-#### 查看日志
-
-```bash
-# 查看容器日志
-docker logs -f hajimi-king-pro
-
-# 查看应用日志（通过 Web 面板）
-# 访问 http://localhost:5000 → 日志页面
-```
-
-#### 重启服务
-
-```bash
-docker-compose restart
-
-# 或
-docker restart hajimi-king-pro
-```
-
-#### 停止服务
-
-```bash
-docker-compose down
-
-# 或
-docker stop hajimi-king-pro
-```
-
-**注意**：
-- Docker 容器会自动运行 `start.py`，同时启动 Web 面板和主程序
-- 配置文件统一使用 `/.env` 路径
-  - Docker Compose: 通过 `env_file` 配置注入环境变量
-  - Kubernetes: 通过 ConfigMap 挂载到 `/.env`
-- 如果主程序启动失败（例如未配置 GitHub Token），Web 面板仍会继续运行
-- 所有日志都可以在 Web 面板的「日志」页面查看
-- 数据持久化：`./data` 目录会自动挂载到容器的 `/app/data`
-
-#### Kubernetes 部署示例
-
-如果使用 Kubernetes，可以通过 ConfigMap 挂载配置文件：
-
-```yaml
-# configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: hajimi-king-config
-data:
-  .env: |
-    # ==================== GitHub 认证配置 ====================
-    GITHUB_TOKENS=ghp_xxxx,ghp_yyyy
-    GITHUB_SESSIONS=xxxxx
-    
-    # ==================== Web面板配置 ====================
-    WEB_PORT=5000
-    WEB_HOST=0.0.0.0
-    WEB_AUTH_KEY=your_secret_key_here
-    WEB_AUTH_ENABLED=true
-    
-    # ... 其他配置 ...
+- **React** 18 - UI 框架
+- **Ant Design** 5 - UI 组件库
+- **Recharts** - 数据可视化
+- **Axios** - HTTP 客户端
+- **React Router** - 路由管理
+- **Vite** - 构建工具
 
 ---
-# deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: hajimi-king-pro
-spec:
-  replicas: 1
-  template:
-    spec:
-      containers:
-      - name: hajimi-king-pro
-        image: hajimi-king-pro:0.0.1
-        volumeMounts:
-        - name: config
-          mountPath: /.env
-          subPath: .env
-        - name: data
-          mountPath: /app/data
-      volumes:
-      - name: config
-        configMap:
-          name: hajimi-king-config
-      - name: data
-        persistentVolumeClaim:
-          claimName: hajimi-king-data
-```
-
-### 方式2: 使用 Systemd 服务
-
-创建 `/etc/systemd/system/hajimi-king.service`:
-
-```ini
-[Unit]
-Description=Hajimi King (Web Panel + Main App)
-After=network.target
-
-[Service]
-Type=simple
-User=your-user
-WorkingDirectory=/path/to/hajimi-king
-Environment="PATH=/path/to/hajimi-king/.venv/bin"
-ExecStart=/path/to/hajimi-king/.venv/bin/python start.py
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-启动服务:
-```bash
-sudo systemctl enable hajimi-king
-sudo systemctl start hajimi-king
-sudo systemctl status hajimi-king
-```
-
-查看日志:
-```bash
-sudo journalctl -u hajimi-king -f
-```
-
-### 方式3: 使用 Nginx 反向代理（可选）
-
-如果需要通过域名访问或使用 HTTPS，可以配置 Nginx 反向代理：
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    location / {
-        proxy_pass http://localhost:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
 
 ## 📦 目录结构
 
@@ -461,92 +612,32 @@ hajimi-king/
         │   ├── services/   # API 服务
         │   ├── App.jsx     # 主应用组件
         │   └── main.jsx    # 入口文件
-        ├── index.html
-        ├── package.json
         └── vite.config.js
 ```
 
-## 🐛 故障排除
+---
+
+## 🐛 常见问题
 
 ### 1. 无法访问面板
-- 检查防火墙是否开放了 WEB_PORT 端口
-- 确认 WEB_HOST 设置正确（0.0.0.0 允许外部访问）
+- 检查防火墙是否开放 `WEB_PORT` 端口
+- 确认 `WEB_HOST` 设置正确（0.0.0.0 允许外部访问）
 
 ### 2. 认证失败
-- 确认 WEB_AUTH_KEY 设置正确
-- 检查浏览器是否保存了正确的认证密钥
 - 检查 `.env` 中的 `WEB_AUTH_KEY` 是否正确配置
+- 确认请求头 `X-Auth-Key` 值正确
 
 ### 3. 数据不显示
-- 确认数据库配置正确
-- 检查 STORAGE_TYPE 是否设置为 sql
+- 确认 `STORAGE_TYPE=sql` 且数据库配置正确
 - 确保主程序已运行并生成了数据
 
-### 4. 提示缺少模块
-
+### 4. 端口被占用
 ```bash
-ModuleNotFoundError: No module named 'flask_cors'
+# 修改 .env 中的 WEB_PORT
+WEB_PORT=5001
 ```
-
-**解决**: 安装依赖
-```bash
-pip install -r requirements.txt
-# 或
-pip install flask flask-cors python-dotenv
-```
-
-### 5. 前端未构建
-
-```bash
-⚠️ 前端未构建
-```
-
-**解决**: 使用 `web/start.py` 会自动构建，或手动构建：
-```bash
-cd web/frontend
-npm install
-npm run build
-```
-
-### 6. 端口被占用
-
-```bash
-Address already in use
-```
-
-**解决**: 修改 `.env` 中的 `WEB_PORT`，或停止占用端口的进程
-
-## 📝 注意事项
-
-1. **生产环境**: 必须启用认证 (`WEB_AUTH_ENABLED=true`)
-2. **密钥安全**: `WEB_AUTH_KEY` 应设置强密码
-3. **依赖安装**: 首次运行建议使用 `web/start.py` 自动安装依赖
-4. **前端构建**: 生产环境需要先构建前端才能使用 `start.py`
-
-## 🎉 优势
-
-相比旧的脚本方案：
-
-✅ **统一体验** - 一个 Python 脚本替代多个 shell/bat 脚本  
-✅ **跨平台** - Windows/Linux/Mac 都可以使用相同命令  
-✅ **自动化** - 自动安装依赖、构建前端  
-✅ **容错性** - 更好的错误提示和处理  
-✅ **可维护** - 代码更清晰，更容易维护
-
-## 更新日志
-
-### v1.0.0 (2025-01-06)
-- ✨ 初始版本发布
-- 🎨 实现所有核心功能
-- 📊 支持实时数据监控
-- 🔐 添加认证机制
-
-## 许可证
-
-与主项目保持一致。
 
 ---
 
-**文档版本**: v2.0  
-**最后更新**: 2025-01-06
-
+**文档版本**: v3.0  
+**最后更新**: 2025-01-08

@@ -52,7 +52,6 @@ CORS(app)  # 启用CORS支持
 WEB_PORT = int(os.getenv('WEB_PORT', '5000'))
 WEB_HOST = os.getenv('WEB_HOST', '0.0.0.0')
 WEB_AUTH_KEY = os.getenv('WEB_AUTH_KEY', '')
-WEB_AUTH_ENABLED = os.getenv('WEB_AUTH_ENABLED', 'true').lower() in ('true', '1', 'yes')
 
 # 数据库管理器 - 延迟初始化以避免 Gunicorn worker 冲突
 db_manager = None
@@ -77,10 +76,8 @@ def require_auth(f):
     """认证装饰器"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not WEB_AUTH_ENABLED:
-            return f(*args, **kwargs)
-        
-        auth_key = request.headers.get('X-Auth-Key') or request.args.get('auth_key')
+        # 获取 Authorization 标头
+        auth_key = request.headers.get('Authorization')
         if not auth_key or auth_key != WEB_AUTH_KEY:
             return jsonify({'error': '未授权访问'}), 401
         return f(*args, **kwargs)
@@ -714,10 +711,7 @@ def not_found(e):
 
 if __name__ == '__main__':
     logger.info(f"🌐 Web面板启动在 http://{WEB_HOST}:{WEB_PORT}")
-    if WEB_AUTH_ENABLED:
-        logger.info(f"🔒 认证已启用，请使用 X-Auth-Key: {WEB_AUTH_KEY}")
-    else:
-        logger.warning("⚠️ 认证未启用，建议在生产环境启用认证")
+    logger.info(f"🔒 认证已启用，请使用 Authorization: {WEB_AUTH_KEY}")
     
     app.run(host=WEB_HOST, port=WEB_PORT, debug=False)
 

@@ -13,7 +13,7 @@ class ApiService {
 
   getHeaders() {
     return {
-      'X-Auth-Key': this.authKey,
+      'Authorization': this.authKey,
       'Content-Type': 'application/json'
     }
   }

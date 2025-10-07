@@ -130,6 +130,17 @@
 
 > 💡 支持固定值（如`1`）或范围（如`1-3`或`0.5-1.5`）
 
+### Web面板配置
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `WEB_PORT` | `5000` | Web面板服务端口 |
+| `WEB_HOST` | `0.0.0.0` | Web面板监听地址（0.0.0.0=所有网卡，127.0.0.1=仅本地） |
+| `WEB_AUTH_KEY` | 空 | Web面板认证密钥（强密码） |
+| `WEB_AUTH_ENABLED` | `true` | 是否启用Web面板认证（生产环境建议启用） |
+
+> 💡 Web面板提供可视化管理界面，可查看密钥、日志、统计等信息
+
 ### 文本存储配置（仅STORAGE_TYPE=text）
 
 | 变量名 | 默认值 | 说明 |
@@ -158,6 +169,12 @@ DATA_PATH=/app/data
 STORAGE_TYPE=sql
 DB_TYPE=sqlite
 PROXY=http://proxy.example.com:8080  # 可选
+
+# Web面板配置
+WEB_PORT=5000
+WEB_HOST=0.0.0.0
+WEB_AUTH_KEY=your_secret_key_here
+WEB_AUTH_ENABLED=true
 ```
 
 ---
