@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  hajimi-king-pro:
+    image: ghcr.io/hyb-oyqq/hajimi-king-pro:dev-latest
+    container_name: hajimi-king-pro-dev
+    restart: unless-stopped
+    network_mode: host
+    # 环境变量
+    env_file:
+      - .env
+    
+    # 数据卷挂载（使用独立的 dev 数据目录，避免与生产环境冲突）
+    volumes:
+      - ./data-dev:/app/data
+

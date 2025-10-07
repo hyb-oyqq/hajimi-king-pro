@@ -1,8 +1,6 @@
 name: Docker Build and Publish
 
 on:
-  release:
-    types: [published]  # 只在发布 Release 时触发
   push:
     branches:
       - dev
@@ -40,13 +38,13 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
-            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
-            type=sha,prefix=main-,enable=${{ github.event_name == 'release' || github.ref == 'refs/heads/main' }}
+            # main 分支 → latest 标签
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # dev 分支 → dev-latest 标签
+            type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/dev' }}
+            # main 分支还会生成带 commit SHA 的标签（用于回滚）
+            type=sha,prefix=main-,enable=${{ github.ref == 'refs/heads/main' }}
+            # dev 分支还会生成带 commit SHA 的标签（用于回滚）
             type=sha,prefix=dev-,enable=${{ github.ref == 'refs/heads/dev' }}
 
       - name: Build and push Docker image
