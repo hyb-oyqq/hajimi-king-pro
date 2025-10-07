@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Input, Button, Space, message, Popconfirm, Modal, Tag, Tooltip } from 'antd'
+import { Card, Table, Input, Button, Space, message, Popconfirm, Modal, Tag, Tooltip, theme } from 'antd'
 import { PlusOutlined, DeleteOutlined, ReloadOutlined, ThunderboltOutlined, SearchOutlined, CopyOutlined } from '@ant-design/icons'
 import api from '../services/api'
 
 function Rules() {
+  const { token } = theme.useToken()
   const [rules, setRules] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
@@ -105,7 +106,9 @@ function Rules() {
         <Tooltip placement="topLeft" title={text}>
           <code style={{ 
             fontSize: 13, 
-            background: '#f5f5f5', 
+            background: token.colorBgContainer, 
+            border: `1px solid ${token.colorBorder}`,
+            color: token.colorText,
             padding: '4px 8px',
             borderRadius: 4,
             display: 'block',
@@ -205,24 +208,25 @@ function Rules() {
         </Space>
 
         <div style={{ 
-          background: '#f0f2f5', 
+          background: token.colorBgLayout, 
           padding: 16, 
           borderRadius: 4, 
-          marginBottom: 16 
+          marginBottom: 16,
+          border: `1px solid ${token.colorBorder}`
         }}>
           <Space size="large">
             <div>
-              <span style={{ fontWeight: 'bold' }}>📊 规则总数：</span>
+              <span style={{ fontWeight: 'bold', color: token.colorText }}>📊 规则总数：</span>
               <Tag color="blue">{rules.length}</Tag>
             </div>
             {searchText && (
               <div>
-                <span style={{ fontWeight: 'bold' }}>🔍 筛选结果：</span>
+                <span style={{ fontWeight: 'bold', color: token.colorText }}>🔍 筛选结果：</span>
                 <Tag color="green">{filteredDataSource.length}</Tag>
               </div>
             )}
             <div>
-              <span style={{ fontWeight: 'bold' }}>📄 当前页：</span>
+              <span style={{ fontWeight: 'bold', color: token.colorText }}>📄 当前页：</span>
               <Tag color="orange">{currentPage}/{Math.ceil(filteredDataSource.length / pageSize)}</Tag>
             </div>
           </Space>
@@ -267,7 +271,7 @@ function Rules() {
           value={newRule}
           onChange={(e) => setNewRule(e.target.value)}
         />
-        <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
+        <div style={{ marginTop: 8, color: token.colorTextSecondary, fontSize: 12 }}>
           支持GitHub Code Search语法，例如：<br/>
           • AIzaSy language:python<br/>
           • AIzaSy filename:.env<br/>

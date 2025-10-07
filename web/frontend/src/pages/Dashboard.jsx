@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Row, Col, Statistic, Tag, Spin, message } from 'antd'
+import { Card, Row, Col, Statistic, Tag, Spin, message, theme } from 'antd'
 import { 
   KeyOutlined, 
   CheckCircleOutlined, 
@@ -11,6 +11,7 @@ import {
 import api from '../services/api'
 
 function Dashboard() {
+  const { token } = theme.useToken()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -68,9 +69,9 @@ function Dashboard() {
               valueStyle={{ color: '#1890ff' }}
             />
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: '#888' }}>相较昨日: {renderChangeBadge(stats?.total?.yesterday_change || 0)}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>相较上周: {renderChangeBadge(stats?.total?.last_week_change || 0)}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>相较上月: {renderChangeBadge(stats?.total?.last_month_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较昨日: {renderChangeBadge(stats?.total?.yesterday_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上周: {renderChangeBadge(stats?.total?.last_week_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上月: {renderChangeBadge(stats?.total?.last_month_change || 0)}</div>
             </div>
           </Card>
         </Col>
@@ -84,9 +85,9 @@ function Dashboard() {
               valueStyle={{ color: '#52c41a' }}
             />
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: '#888' }}>相较昨日: {renderChangeBadge(stats?.valid?.yesterday_change || 0)}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>相较上周: {renderChangeBadge(stats?.valid?.last_week_change || 0)}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>相较上月: {renderChangeBadge(stats?.valid?.last_month_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较昨日: {renderChangeBadge(stats?.valid?.yesterday_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上周: {renderChangeBadge(stats?.valid?.last_week_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上月: {renderChangeBadge(stats?.valid?.last_month_change || 0)}</div>
             </div>
           </Card>
         </Col>
@@ -100,9 +101,9 @@ function Dashboard() {
               valueStyle={{ color: '#fa8c16' }}
             />
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: '#888' }}>相较昨日: {renderChangeBadge(stats?.rate_limited?.yesterday_change || 0)}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>相较上周: {renderChangeBadge(stats?.rate_limited?.last_week_change || 0)}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>相较上月: {renderChangeBadge(stats?.rate_limited?.last_month_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较昨日: {renderChangeBadge(stats?.rate_limited?.yesterday_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上周: {renderChangeBadge(stats?.rate_limited?.last_week_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上月: {renderChangeBadge(stats?.rate_limited?.last_month_change || 0)}</div>
             </div>
           </Card>
         </Col>
@@ -116,9 +117,9 @@ function Dashboard() {
               valueStyle={{ color: '#722ed1' }}
             />
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: '#888' }}>相较昨日: {renderChangeBadge(stats?.paid?.yesterday_change || 0)}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>相较上周: {renderChangeBadge(stats?.paid?.last_week_change || 0)}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>相较上月: {renderChangeBadge(stats?.paid?.last_month_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较昨日: {renderChangeBadge(stats?.paid?.yesterday_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上周: {renderChangeBadge(stats?.paid?.last_week_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上月: {renderChangeBadge(stats?.paid?.last_month_change || 0)}</div>
             </div>
           </Card>
         </Col>

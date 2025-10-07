@@ -66,7 +66,7 @@ class DatabaseManager:
         
         Args:
             keys: 密钥列表
-            key_type: 密钥类型 (valid, rate_limited, paid, send)
+            key_type: 密钥类型 (valid, rate_limited, paid, send[待验证])
             metadata: 元数据 (repo_name, file_path, file_url等)
         
         Returns:

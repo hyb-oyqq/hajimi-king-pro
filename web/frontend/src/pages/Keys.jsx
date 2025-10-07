@@ -86,7 +86,7 @@ function Keys() {
           valid: '有效',
           rate_limited: '限流',
           paid: '付费',
-          send: '已发送'
+          send: '待验证'
         }
         return <Tag color={colorMap[type]}>{textMap[type] || type}</Tag>
       }
@@ -146,7 +146,7 @@ function Keys() {
             <Option value="valid">有效</Option>
             <Option value="rate_limited">限流</Option>
             <Option value="paid">付费</Option>
-            <Option value="send">已发送</Option>
+            <Option value="send">待验证</Option>
           </Select>
           
           <Input

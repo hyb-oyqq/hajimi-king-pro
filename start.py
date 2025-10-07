@@ -131,9 +131,14 @@ def start_main_app():
         print("❌ 找不到 app/hajimi_king.py")
         return None
     
-    # 统一使用 /.env 作为配置文件路径（本地和容器环境一致）
-    env_file = Path("/.env")
+    # 环境变量文件路径
     in_docker = is_docker_environment()
+    
+    # Docker 环境使用 /.env，本地环境使用项目根目录下的 .env
+    if in_docker:
+        env_file = Path("/.env")
+    else:
+        env_file = project_root / ".env"
     
     if env_file.exists():
         print(f"✅ 找到配置文件: {env_file}")
@@ -142,8 +147,8 @@ def start_main_app():
         if in_docker:
             print("🐳 容器环境：使用环境变量配置")
         else:
-            print("⚠️  未找到配置文件: /.env")
-            print("   请将 env.example 复制为 /.env 并配置必要参数")
+            print(f"⚠️  未找到配置文件: {env_file}")
+            print(f"   请将 env.example 复制为 {env_file} 并配置必要参数")
             return None
     
     # 主程序日志只写入文件，不输出到控制台
@@ -249,7 +254,7 @@ def main():
         print("⚠️  主程序启动失败，但 Web 面板仍在运行")
         print("=" * 60)
         print("\n💡 调试建议:")
-        print("   1. 确保 .env 文件存在且配置正确")
+        print(f"   1. 确保配置文件存在: {project_root / '.env'}")
         print("   2. 单独运行主程序查看详细错误: python app/hajimi_king.py")
         print("   3. 检查 GITHUB_TOKENS 或 GITHUB_SESSION 是否配置")
         
