@@ -90,11 +90,16 @@ def start_web_server():
                     "--workers", "4",
                     "--worker-class", "sync",
                     "--timeout", "120",
+                    "--log-level", "info",
                     "--access-logfile", "-",
                     "--error-logfile", "-",
+                    "--capture-output",
                     "web.api:app"
                 ],
-                cwd=str(project_root)
+                cwd=str(project_root),
+                stdout=sys.stdout,
+                stderr=sys.stderr,
+                bufsize=0  # 禁用缓冲，实时输出
             )
             print("✅ Web 面板启动中（使用 Gunicorn 生产服务器）...")
             return process
@@ -105,7 +110,9 @@ def start_web_server():
     # 使用 Flask 开发服务器（开发环境）
     process = subprocess.Popen(
         [sys.executable, str(web_script)],
-        cwd=str(project_root)
+        cwd=str(project_root),
+        stdout=sys.stdout,
+        stderr=sys.stderr
     )
     
     print("✅ Web 面板启动中（使用 Flask 开发服务器）...")
