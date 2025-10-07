@@ -1,0 +1,24 @@
+# Hajimi King Pro 项目依赖
+
+# Web 框架
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# 环境变量管理
+python-dotenv>=1.1.1
+
+# Google Gemini API
+google-generativeai>=0.8.5
+
+# HTTP 请求
+requests>=2.32.4
+pysocks>=1.7.1
+
+# HTML 解析
+beautifulsoup4>=4.12.3
+lxml>=5.1.0
+
+# 数据库驱动
+psycopg2-binary>=2.9.9
+pymysql>=1.1.0
+

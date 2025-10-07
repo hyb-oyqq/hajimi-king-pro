@@ -1,0 +1,98 @@
+.ant-layout-sider-trigger {
+  background: #1890ff !important;
+}
+
+.stat-card {
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.change-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.change-badge.positive {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.change-badge.negative {
+  background: #fff2e8;
+  color: #fa8c16;
+}
+
+.log-viewer {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  padding: 16px;
+  border-radius: 4px;
+  max-height: 600px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* 移动端适配 */
+/* 桌面端显示侧边栏，隐藏菜单按钮 */
+@media (min-width: 992px) {
+  .mobile-menu-button {
+    display: none !important;
+  }
+  .desktop-sider {
+    display: block !important;
+  }
+}
+
+/* 移动端隐藏侧边栏，显示菜单按钮 */
+@media (max-width: 991px) {
+  .mobile-menu-button {
+    display: inline-block !important;
+  }
+  .desktop-sider {
+    display: none !important;
+  }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  /* 减小卡片间距 */
+  .ant-card {
+    margin-bottom: 12px !important;
+  }
+  
+  /* 优化表格显示 */
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  /* 优化按钮组 */
+  .ant-space {
+    gap: 8px !important;
+  }
+  
+  /* 优化描述列表 */
+  .ant-descriptions-item-label {
+    font-size: 13px;
+  }
+  
+  .ant-descriptions-item-content {
+    font-size: 13px;
+  }
+  
+  /* 响应式内容区域 */
+  .ant-layout-content {
+    margin: 12px 8px !important;
+    padding: 12px !important;
+  }
+}
+

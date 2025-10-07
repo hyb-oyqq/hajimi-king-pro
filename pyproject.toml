@@ -1,7 +1,7 @@
 [project]
 name = "hajimi-king-Pro"
 version = "0.0.1-beta"
-description = "Add your description here"
+description = "Hajimi King Pro - A professional tool to scan and validate Google AI API keys from GitHub"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -13,4 +13,6 @@ dependencies = [
     "pymysql>=1.1.0",
     "beautifulsoup4>=4.12.3",
     "lxml>=5.1.0",
+    "flask>=3.0.0",
+    "flask-cors>=4.0.0",
 ]

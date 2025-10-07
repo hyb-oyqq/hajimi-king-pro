@@ -24,7 +24,7 @@ class Config:
     GITHUB_SESSION_STR = os.getenv("GITHUB_SESSION", "")
     GITHUB_SESSIONS = [session.strip() for session in GITHUB_SESSION_STR.split(',') if session.strip()]
     
-    DATA_PATH = os.getenv('DATA_PATH', '/app/data')
+    DATA_PATH = os.getenv('DATA_PATH', 'data')
     PROXY_LIST_STR = os.getenv("PROXY", "")
     
     # 解析代理列表，支持格式：http://user:pass@host:port,http://host:port,socks5://user:pass@host:port
