@@ -87,9 +87,13 @@ def start_web_server():
                 [
                     sys.executable, "-m", "gunicorn",
                     "--bind", f"{web_host}:{web_port}",
-                    "--workers", "4",
+                    "--workers", "2",  # 减少workers避免初始化冲突
                     "--worker-class", "sync",
-                    "--timeout", "120",
+                    "--timeout", "300",  # 增加超时时间
+                    "--graceful-timeout", "300",
+                    "--keepalive", "5",
+                    "--max-requests", "1000",  # 定期重启worker避免内存泄漏
+                    "--max-requests-jitter", "100",
                     "--log-level", "info",
                     "--access-logfile", "-",
                     "--error-logfile", "-",

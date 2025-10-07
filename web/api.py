@@ -54,14 +54,23 @@ WEB_HOST = os.getenv('WEB_HOST', '0.0.0.0')
 WEB_AUTH_KEY = os.getenv('WEB_AUTH_KEY', '')
 WEB_AUTH_ENABLED = os.getenv('WEB_AUTH_ENABLED', 'true').lower() in ('true', '1', 'yes')
 
-# 创建数据库管理器
+# 数据库管理器 - 延迟初始化以避免 Gunicorn worker 冲突
 db_manager = None
-if Config.STORAGE_TYPE == 'sql':
-    db_config = Config.get_db_config()
-    db_manager = create_db_manager(Config.STORAGE_TYPE, Config.DB_TYPE, db_config)
-    if db_manager:
-        db_manager.connect()
-        db_manager.init_tables()
+
+def get_db_manager():
+    """获取数据库管理器实例（延迟初始化）"""
+    global db_manager
+    if db_manager is None and Config.STORAGE_TYPE == 'sql':
+        try:
+            db_config = Config.get_db_config()
+            db_manager = create_db_manager(Config.STORAGE_TYPE, Config.DB_TYPE, db_config)
+            if db_manager:
+                db_manager.connect()
+                db_manager.init_tables()
+                logger.info("✅ 数据库管理器初始化成功")
+        except Exception as e:
+            logger.error(f"❌ 数据库管理器初始化失败: {e}")
+    return db_manager
 
 
 def require_auth(f):
@@ -85,11 +94,12 @@ def require_auth(f):
 def get_dashboard_stats():
     """获取仪表盘统计数据"""
     try:
-        if not db_manager:
+        db = get_db_manager()
+        if not db:
             return jsonify({'error': '数据库未启用'}), 500
         
         # 获取所有密钥
-        all_keys = db_manager.get_keys()
+        all_keys = db.get_keys()
         
         # 统计各类密钥数量
         total_keys = len(all_keys)
@@ -175,7 +185,8 @@ def get_dashboard_stats():
 def get_keys():
     """获取密钥列表"""
     try:
-        if not db_manager:
+        db = get_db_manager()
+        if not db:
             return jsonify({'error': '数据库未启用'}), 500
         
         # 获取查询参数
@@ -185,7 +196,7 @@ def get_keys():
         search = request.args.get('search', '')
         
         # 获取所有密钥
-        all_keys = db_manager.get_keys(key_type=key_type)
+        all_keys = db.get_keys(key_type=key_type)
         
         # 搜索过滤
         if search:
@@ -214,7 +225,8 @@ def get_keys():
 def delete_key(key_id):
     """删除密钥"""
     try:
-        if not db_manager:
+        db = get_db_manager()
+        if not db:
             return jsonify({'error': '数据库未启用'}), 500
         
         # 这里需要在db_manager中添加删除方法
@@ -232,11 +244,12 @@ def delete_key(key_id):
 def get_analytics_trend():
     """获取趋势统计数据"""
     try:
-        if not db_manager:
+        db = get_db_manager()
+        if not db:
             return jsonify({'error': '数据库未启用'}), 500
         
         days = int(request.args.get('days', 30))
-        all_keys = db_manager.get_keys()
+        all_keys = db.get_keys()
         
         # 按天统计
         now = datetime.now()
@@ -268,10 +281,11 @@ def get_analytics_trend():
 def get_repo_stats():
     """获取仓库统计数据"""
     try:
-        if not db_manager:
+        db = get_db_manager()
+        if not db:
             return jsonify({'error': '数据库未启用'}), 500
         
-        all_keys = db_manager.get_keys()
+        all_keys = db.get_keys()
         
         # 按仓库统计
         repo_stats = {}
@@ -640,16 +654,33 @@ def delete_github_session(index):
 
 # ==================== 系统状态 API ====================
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """健康检查端点（无需认证）"""
+    try:
+        return jsonify({
+            'status': 'healthy',
+            'service': 'hajimi-king-web',
+            'timestamp': datetime.now().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e)
+        }), 503
+
 @app.route('/api/system/status', methods=['GET'])
 @require_auth
 def get_system_status():
     """获取系统状态"""
     try:
+        db = get_db_manager()
         return jsonify({
             'is_running': True,  # 如果API可访问说明系统在运行
             'is_in_cooldown': state.is_in_cooldown,
             'db_type': Config.DB_TYPE,
-            'storage_type': Config.STORAGE_TYPE
+            'storage_type': Config.STORAGE_TYPE,
+            'db_connected': db is not None
         })
     except Exception as e:
         logger.error(f"获取系统状态失败: {e}")
