@@ -6,6 +6,7 @@ WORKDIR /app
 # 设置环境变量
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+ENV DOCKER_ENVIRONMENT=true
 
 # 安装系统依赖（包含libxml2和libxslt用于lxml）
 RUN apt-get update && apt-get install -y \
@@ -26,5 +27,5 @@ RUN uv pip install --system --no-cache -r pyproject.toml
 # 复制应用代码
 COPY . .
 
-# 启动命令
-CMD ["python", "app/hajimi_king.py"]
+# 启动命令（使用 start.py 同时启动 Web 和主程序）
+CMD ["python", "start.py"]

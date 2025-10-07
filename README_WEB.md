@@ -244,9 +244,100 @@ X-Auth-Key: your_secret_key_here
 | 自动构建前端 | ❌ | ✅ |
 | 进程监控 | ✅ | ❌ |
 
-## 🔧 系统服务配置
+## 🐳 生产部署
 
-### Systemd 服务文件
+### 方式1: 使用 Docker（推荐）
+
+#### 快速部署（一键脚本）
+
+**Linux/Mac:**
+```bash
+# 赋予执行权限
+chmod +x deploy_docker.sh
+
+# 运行部署脚本
+./deploy_docker.sh
+```
+
+**Windows:**
+```bash
+# 直接运行
+deploy_docker.bat
+```
+
+脚本会自动：
+- ✅ 检查 .env 文件
+- ✅ 检查并构建前端（如果需要）
+- ✅ 构建 Docker 镜像
+- ✅ 启动容器
+
+#### 手动部署步骤
+
+1. **构建前端**（首次部署或前端更新后需要）：
+```bash
+cd web/frontend
+npm install
+npm run build
+cd ../..
+```
+
+2. **配置环境变量**：
+确保 `.env` 文件已配置好所有必要参数
+
+3. **构建镜像**：
+```bash
+docker build -t hajimi-king-pro:0.0.1 .
+```
+
+4. **启动容器**：
+```bash
+# 使用 docker-compose（推荐）
+docker-compose up -d
+
+# 或使用 docker run
+docker run -d \
+  --name hajimi-king-pro \
+  --network host \
+  --restart unless-stopped \
+  --env-file .env \
+  -v $(pwd)/data:/app/data \
+  hajimi-king-pro:0.0.1
+```
+
+#### 查看日志
+
+```bash
+# 查看容器日志
+docker logs -f hajimi-king-pro
+
+# 查看应用日志（通过 Web 面板）
+# 访问 http://localhost:5000 → 日志页面
+```
+
+#### 重启服务
+
+```bash
+docker-compose restart
+
+# 或
+docker restart hajimi-king-pro
+```
+
+#### 停止服务
+
+```bash
+docker-compose down
+
+# 或
+docker stop hajimi-king-pro
+```
+
+**注意**：
+- Docker 容器会自动运行 `start.py`，同时启动 Web 面板和主程序
+- 如果主程序启动失败（例如未配置 GitHub Token），Web 面板仍会继续运行
+- 所有日志都可以在 Web 面板的「日志」页面查看
+
+### 方式2: 使用 Systemd 服务
 
 创建 `/etc/systemd/system/hajimi-king.service`:
 
@@ -280,7 +371,9 @@ sudo systemctl status hajimi-king
 sudo journalctl -u hajimi-king -f
 ```
 
-### 使用 Nginx 反向代理
+### 方式3: 使用 Nginx 反向代理（可选）
+
+如果需要通过域名访问或使用 HTTPS，可以配置 Nginx 反向代理：
 
 ```nginx
 server {

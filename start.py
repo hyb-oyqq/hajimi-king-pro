@@ -127,12 +127,22 @@ def check_process_startup(process, name, timeout=3):
     return True
 
 
+def is_docker_environment():
+    """检测是否在 Docker 环境中运行"""
+    return os.path.exists('/.dockerenv') or os.environ.get('DOCKER_ENVIRONMENT') == 'true'
+
+
 def main():
     """主函数"""
     print("=" * 60)
     print("🔑 Hajimi King Pro - 生产环境启动器")
     print("=" * 60)
     print()
+    
+    # 检测环境
+    in_docker = is_docker_environment()
+    if in_docker:
+        print("🐳 检测到 Docker 环境")
     
     # 注册信号处理
     signal.signal(signal.SIGINT, signal_handler)
@@ -166,20 +176,27 @@ def main():
             print("\n" + "=" * 60)
             print("⚠️  主程序启动失败，但 Web 面板仍在运行")
             print("=" * 60)
-            print("\n💡 选项:")
-            print("   1. 按 Enter 继续（仅运行 Web 面板）")
-            print("   2. 按 Ctrl+C 停止所有服务")
-            print()
             
-            try:
-                input("请选择操作: ")
+            # 在 Docker 环境中自动继续，不等待用户输入
+            if in_docker:
                 # 移除失败的主程序进程
                 processes.pop()
-                print("\n✅ 继续运行 Web 面板...")
-            except KeyboardInterrupt:
-                print("\n")
-                signal_handler(None, None)
-                sys.exit(1)
+                print("\n✅ Docker 环境：自动继续运行 Web 面板...")
+            else:
+                print("\n💡 选项:")
+                print("   1. 按 Enter 继续（仅运行 Web 面板）")
+                print("   2. 按 Ctrl+C 停止所有服务")
+                print()
+                
+                try:
+                    input("请选择操作: ")
+                    # 移除失败的主程序进程
+                    processes.pop()
+                    print("\n✅ 继续运行 Web 面板...")
+                except KeyboardInterrupt:
+                    print("\n")
+                    signal_handler(None, None)
+                    sys.exit(1)
     else:
         print("\n❌ 主程序无法启动（配置问题或其他错误）")
         print("\n" + "=" * 60)
@@ -189,18 +206,23 @@ def main():
         print("   1. 确保 .env 文件存在且配置正确")
         print("   2. 单独运行主程序查看详细错误: python app/hajimi_king.py")
         print("   3. 检查 GITHUB_TOKENS 或 GITHUB_SESSION 是否配置")
-        print("\n💡 选项:")
-        print("   1. 按 Enter 继续（仅运行 Web 面板）")
-        print("   2. 按 Ctrl+C 停止所有服务")
-        print()
         
-        try:
-            input("请选择操作: ")
-            print("\n✅ 继续运行 Web 面板...")
-        except KeyboardInterrupt:
-            print("\n")
-            signal_handler(None, None)
-            sys.exit(1)
+        # 在 Docker 环境中自动继续，不等待用户输入
+        if in_docker:
+            print("\n✅ Docker 环境：自动继续运行 Web 面板...")
+        else:
+            print("\n💡 选项:")
+            print("   1. 按 Enter 继续（仅运行 Web 面板）")
+            print("   2. 按 Ctrl+C 停止所有服务")
+            print()
+            
+            try:
+                input("请选择操作: ")
+                print("\n✅ 继续运行 Web 面板...")
+            except KeyboardInterrupt:
+                print("\n")
+                signal_handler(None, None)
+                sys.exit(1)
     
         print("\n" + "=" * 60)
         if len(processes) == 2:
