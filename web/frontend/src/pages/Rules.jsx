@@ -158,8 +158,8 @@ function Rules() {
   ]
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 24 }}>📋 搜索规则管理</h2>
+    <div style={{ animation: 'fadeIn 0.6s ease-out' }}>
+      <h2 style={{ marginBottom: 24, fontSize: 32 }}>📋 搜索规则管理</h2>
       
       <Card>
         <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between', flexWrap: 'wrap' }}>

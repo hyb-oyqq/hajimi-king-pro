@@ -10,10 +10,93 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* 移除所有强制背景色覆盖，让内联样式生效 */
+
+/* 全局滚动条样式 - 浅色模式 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5568d3 0%, #64408a 100%);
+}
+
+/* 深色模式滚动条样式 */
+.dark-mode ::-webkit-scrollbar-track,
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb,
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7a8ef0 0%, #8a5cb8 100%);
+}
+
+/* 页面淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 页面加载动画 */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* 闪烁动画 */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
 }
 

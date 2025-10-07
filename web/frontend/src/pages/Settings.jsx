@@ -1,9 +1,35 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Descriptions, Tag, Button, List, Space, message, Modal, Input, Popconfirm } from 'antd'
-import { PlusOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Card, Descriptions, Tag, Button, List, Space, message, Modal, Input, Popconfirm, Tooltip, theme, Row, Col } from 'antd'
+import { PlusOutlined, DeleteOutlined, ReloadOutlined, QuestionCircleOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import api from '../services/api'
 
 function Settings() {
+  const { token } = theme.useToken()
+  
+  // 帮助提示组件
+  const HelpTooltip = ({ title, content }) => (
+    <Tooltip 
+      title={
+        <div>
+          {content.split('\n').map((line, index) => (
+            <div key={index} style={{ marginBottom: index < content.split('\n').length - 1 ? 8 : 0 }}>
+              {line}
+            </div>
+          ))}
+        </div>
+      }
+      placement="top"
+    >
+      <QuestionCircleOutlined 
+        style={{ 
+          marginLeft: 8, 
+          color: token.colorPrimary, 
+          cursor: 'help',
+          fontSize: 14
+        }} 
+      />
+    </Tooltip>
+  )
   const [settings, setSettings] = useState({})
   const [tokens, setTokens] = useState([])
   const [sessions, setSessions] = useState([])
@@ -89,31 +115,104 @@ function Settings() {
     }
   }
 
+  const handleRestart = async () => {
+    try {
+      await api.restartSystem()
+      message.success('重启信号已发送，系统将在完成当前任务后重启')
+    } catch (error) {
+      message.error('发送重启信号失败')
+    }
+  }
+
   return (
-    <div>
-      <h2 style={{ marginBottom: 24 }}>⚙️ 系统设置</h2>
+    <div style={{ animation: 'fadeIn 0.6s ease-out' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: 24 
+      }}>
+        <h2 style={{ margin: 0, fontSize: 32 }}>⚙️ 系统设置</h2>
+        <Popconfirm
+          title="确定要重启系统吗？"
+          description="系统将在完成当前任务后重启，新配置将生效"
+          onConfirm={handleRestart}
+          okText="确定"
+          cancelText="取消"
+        >
+          <Button 
+            type="primary" 
+            danger 
+            icon={<ThunderboltOutlined />}
+            size="large"
+          >
+            热重启
+          </Button>
+        </Popconfirm>
+      </div>
       
       {/* 系统配置 */}
       <Card title="🔧 基础配置" style={{ marginBottom: 24 }} loading={loading}>
         <Descriptions bordered column={2}>
-          <Descriptions.Item label="认证模式">
+          <Descriptions.Item label={
+            <span>
+              认证模式
+              <HelpTooltip 
+                content="token=使用GitHub API Token
+web=使用Web方式搜索（Session Cookie）"
+              />
+            </span>
+          }>
             <Tag color={settings.github_auth_mode === 'token' ? 'blue' : 'green'}>
               {settings.github_auth_mode === 'token' ? 'Token 模式' : 'Web 模式'}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="存储类型">
+          <Descriptions.Item label={
+            <span>
+              存储类型
+              <HelpTooltip 
+                content="sql=数据库存储（推荐）
+text=文本文件存储"
+              />
+            </span>
+          }>
             <Tag color="purple">{settings.storage_type?.toUpperCase()}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="数据库类型">
+          <Descriptions.Item label={
+            <span>
+              数据库类型
+              <HelpTooltip 
+                content="sqlite=轻量级文件数据库
+postgresql=PostgreSQL关系型数据库
+mysql=MySQL关系型数据库"
+              />
+            </span>
+          }>
             <Tag>{settings.db_type?.toUpperCase()}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="日期范围">
+          <Descriptions.Item label={
+            <span>
+              日期范围
+              <HelpTooltip 
+                content="仓库年龄过滤（天数，默认730天约2年）
+筛选指定天数内有更新的仓库"
+              />
+            </span>
+          }>
             {settings.date_range_days} 天
           </Descriptions.Item>
           <Descriptions.Item label="语言">
             {settings.language}
           </Descriptions.Item>
-          <Descriptions.Item label="代理数量">
+          <Descriptions.Item label={
+            <span>
+              代理数量
+              <HelpTooltip 
+                content="代理服务器数量（支持HTTP/HTTPS/SOCKS5）
+多个代理会轮换使用，提高访问稳定性"
+              />
+            </span>
+          }>
             {settings.proxy_count} 个
           </Descriptions.Item>
         </Descriptions>
@@ -122,16 +221,50 @@ function Settings() {
       {/* Gemini模型配置 */}
       <Card title="🤖 Gemini模型配置" style={{ marginBottom: 24 }} loading={loading}>
         <Descriptions bordered column={2}>
-          <Descriptions.Item label="基础验证模型">
+          <Descriptions.Item label={
+            <span>
+              基础验证模型
+              <HelpTooltip 
+                content="密钥验证模型（默认 gemini-2.5-flash）
+用于检测发现的密钥是否有效"
+              />
+            </span>
+          }>
             <Tag color="blue">{settings.hajimi_check_model}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="付费验证模型">
+          <Descriptions.Item label={
+            <span>
+              付费验证模型
+              <HelpTooltip 
+                content="付费密钥验证模型（默认 gemini-2.5-pro-preview-03-25）
+用于检测有效密钥是否为付费账号"
+              />
+            </span>
+          }>
             <Tag color="purple">{settings.hajimi_paid_model}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="异步验证并发数">
+          <Descriptions.Item label={
+            <span>
+              异步验证并发数
+              <HelpTooltip 
+                content="默认5，建议范围: 3-10
+数值越大验证速度越快，但API请求频率越高"
+              />
+            </span>
+          }>
             {settings.key_validator_max_workers} 个
           </Descriptions.Item>
-          <Descriptions.Item label="429限速处理">
+          <Descriptions.Item label={
+            <span>
+              429限速处理
+              <HelpTooltip 
+                content="discard=丢弃
+save_only=仅保存
+sync=正常同步
+sync_separate=单独分组"
+              />
+            </span>
+          }>
             <Tag>{settings.rate_limited_handling}</Tag>
           </Descriptions.Item>
         </Descriptions>
@@ -139,43 +272,53 @@ function Settings() {
 
       {/* 同步配置 */}
       <Card title="🔄 同步配置" style={{ marginBottom: 24 }} loading={loading}>
-        <Descriptions bordered column={2}>
-          <Descriptions.Item label="Balancer同步">
-            {settings.balancer_enabled ? 
-              <Tag color="green">已启用</Tag> : 
-              <Tag color="default">未启用</Tag>
-            }
-          </Descriptions.Item>
-          <Descriptions.Item label="GPT-load同步">
-            {settings.gpt_load_enabled ? 
-              <Tag color="green">已启用</Tag> : 
-              <Tag color="default">未启用</Tag>
-            }
-          </Descriptions.Item>
-          {settings.gpt_load_enabled && (
-            <>
-              <Descriptions.Item label="GPT-load分组" span={2}>
-                {settings.gpt_load_group_name || '未设置'}
-              </Descriptions.Item>
-            </>
-          )}
-          <Descriptions.Item label="GPT-load付费同步">
-            {settings.gpt_load_paid_enabled ? 
-              <Tag color="green">已启用</Tag> : 
-              <Tag color="default">未启用</Tag>
-            }
-          </Descriptions.Item>
-          {settings.gpt_load_paid_enabled && (
-            <Descriptions.Item label="付费分组">
-              {settings.gpt_load_paid_group_name || '未设置'}
-            </Descriptions.Item>
-          )}
-          {settings.gpt_load_rate_limited_group_name && (
-            <Descriptions.Item label="限速分组" span={2}>
-              {settings.gpt_load_rate_limited_group_name}
-            </Descriptions.Item>
-          )}
-        </Descriptions>
+        <Row gutter={16}>
+          <Col xs={24} lg={12}>
+            <Card type="inner" title="Gemini Balancer" size="small">
+              <Descriptions bordered column={1} size="small">
+                <Descriptions.Item label="同步状态">
+                  {settings.balancer_enabled ? 
+                    <Tag color="green">已启用</Tag> : 
+                    <Tag color="default">未启用</Tag>
+                  }
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          </Col>
+          <Col xs={24} lg={12}>
+            <Card type="inner" title="GPT-load" size="small">
+              <Descriptions bordered column={1} size="small">
+                <Descriptions.Item label="同步状态">
+                  {settings.gpt_load_enabled ? 
+                    <Tag color="green">已启用</Tag> : 
+                    <Tag color="default">未启用</Tag>
+                  }
+                </Descriptions.Item>
+                {settings.gpt_load_enabled && (
+                  <Descriptions.Item label="分组名称">
+                    {settings.gpt_load_group_name || '未设置'}
+                  </Descriptions.Item>
+                )}
+                <Descriptions.Item label="付费同步">
+                  {settings.gpt_load_paid_enabled ? 
+                    <Tag color="green">已启用</Tag> : 
+                    <Tag color="default">未启用</Tag>
+                  }
+                </Descriptions.Item>
+                {settings.gpt_load_paid_enabled && (
+                  <Descriptions.Item label="付费分组">
+                    {settings.gpt_load_paid_group_name || '未设置'}
+                  </Descriptions.Item>
+                )}
+                {settings.gpt_load_rate_limited_group_name && (
+                  <Descriptions.Item label="限速分组">
+                    {settings.gpt_load_rate_limited_group_name}
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+          </Col>
+        </Row>
       </Card>
 
       {/* 强制冷却配置 */}
@@ -271,7 +414,13 @@ function Settings() {
               <List.Item.Meta
                 title={`Token ${token.index + 1}`}
                 description={
-                  <code style={{ fontSize: 12 }}>
+                  <code style={{ 
+                    fontSize: 12,
+                    color: token.colorText,
+                    background: token.colorBgLayout,
+                    padding: '2px 6px',
+                    borderRadius: 4
+                  }}>
                     {token.token}
                   </code>
                 }
@@ -332,7 +481,13 @@ function Settings() {
               <List.Item.Meta
                 title={`Session ${session.index + 1}`}
                 description={
-                  <code style={{ fontSize: 12 }}>
+                  <code style={{ 
+                    fontSize: 12,
+                    color: token.colorText,
+                    background: token.colorBgLayout,
+                    padding: '2px 6px',
+                    borderRadius: 4
+                  }}>
                     {session.session}
                   </code>
                 }
@@ -360,7 +515,7 @@ function Settings() {
           value={newToken}
           onChange={(e) => setNewToken(e.target.value)}
         />
-        <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
+        <div style={{ marginTop: 8, color: token.colorTextSecondary, fontSize: 12 }}>
           • 在 https://github.com/settings/tokens 创建Token<br/>
           • 需要 repo 和 read:user 权限<br/>
           • 添加后需要重启服务生效
@@ -385,7 +540,7 @@ function Settings() {
           value={newSession}
           onChange={(e) => setNewSession(e.target.value)}
         />
-        <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
+        <div style={{ marginTop: 8, color: token.colorTextSecondary, fontSize: 12 }}>
           • 登录GitHub后，打开浏览器开发者工具<br/>
           • Application &gt; Cookies &gt; user_session<br/>
           • 复制cookie值并粘贴到这里<br/>

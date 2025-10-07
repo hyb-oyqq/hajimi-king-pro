@@ -51,8 +51,8 @@ function Logs() {
   }
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 24 }}>📝 系统日志</h2>
+    <div style={{ animation: 'fadeIn 0.6s ease-out' }}>
+      <h2 style={{ marginBottom: 24, fontSize: 32 }}>📝 系统日志</h2>
       
       <Card>
         <Space style={{ marginBottom: 16, flexWrap: 'wrap' }}>

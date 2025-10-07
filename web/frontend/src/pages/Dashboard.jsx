@@ -55,70 +55,82 @@ function Dashboard() {
   }
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 24 }}>📊 仪表盘</h2>
+    <div style={{ animation: 'fadeIn 0.6s ease-out' }}>
+      <h2 style={{ marginBottom: 24, fontSize: 32 }}>📊 仪表盘</h2>
       
       {/* 总体统计 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card className="stat-card">
+          <Card className="stat-card" style={{ 
+            animationDelay: '0.1s',
+            borderTop: '4px solid #1890ff'
+          }}>
             <Statistic
               title="密钥总数"
               value={stats?.total?.count || 0}
-              prefix={<KeyOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              prefix={<KeyOutlined style={{ fontSize: 24 }} />}
+              valueStyle={{ color: '#1890ff', fontWeight: 'bold', fontSize: 32 }}
             />
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较昨日: {renderChangeBadge(stats?.total?.yesterday_change || 0)}</div>
-              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上周: {renderChangeBadge(stats?.total?.last_week_change || 0)}</div>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 4 }}>相较昨日: {renderChangeBadge(stats?.total?.yesterday_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 4 }}>相较上周: {renderChangeBadge(stats?.total?.last_week_change || 0)}</div>
               <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上月: {renderChangeBadge(stats?.total?.last_month_change || 0)}</div>
             </div>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card className="stat-card">
+          <Card className="stat-card" style={{ 
+            animationDelay: '0.2s',
+            borderTop: '4px solid #52c41a'
+          }}>
             <Statistic
               title="有效密钥"
               value={stats?.valid?.count || 0}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              prefix={<CheckCircleOutlined style={{ fontSize: 24 }} />}
+              valueStyle={{ color: '#52c41a', fontWeight: 'bold', fontSize: 32 }}
             />
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较昨日: {renderChangeBadge(stats?.valid?.yesterday_change || 0)}</div>
-              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上周: {renderChangeBadge(stats?.valid?.last_week_change || 0)}</div>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 4 }}>相较昨日: {renderChangeBadge(stats?.valid?.yesterday_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 4 }}>相较上周: {renderChangeBadge(stats?.valid?.last_week_change || 0)}</div>
               <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上月: {renderChangeBadge(stats?.valid?.last_month_change || 0)}</div>
             </div>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card className="stat-card">
+          <Card className="stat-card" style={{ 
+            animationDelay: '0.3s',
+            borderTop: '4px solid #fa8c16'
+          }}>
             <Statistic
               title="限流密钥"
               value={stats?.rate_limited?.count || 0}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#fa8c16' }}
+              prefix={<ClockCircleOutlined style={{ fontSize: 24 }} />}
+              valueStyle={{ color: '#fa8c16', fontWeight: 'bold', fontSize: 32 }}
             />
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较昨日: {renderChangeBadge(stats?.rate_limited?.yesterday_change || 0)}</div>
-              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上周: {renderChangeBadge(stats?.rate_limited?.last_week_change || 0)}</div>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 4 }}>相较昨日: {renderChangeBadge(stats?.rate_limited?.yesterday_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 4 }}>相较上周: {renderChangeBadge(stats?.rate_limited?.last_week_change || 0)}</div>
               <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上月: {renderChangeBadge(stats?.rate_limited?.last_month_change || 0)}</div>
             </div>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card className="stat-card">
+          <Card className="stat-card" style={{ 
+            animationDelay: '0.4s',
+            borderTop: '4px solid #722ed1'
+          }}>
             <Statistic
               title="付费密钥"
               value={stats?.paid?.count || 0}
-              prefix={<CrownOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              prefix={<CrownOutlined style={{ fontSize: 24 }} />}
+              valueStyle={{ color: '#722ed1', fontWeight: 'bold', fontSize: 32 }}
             />
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较昨日: {renderChangeBadge(stats?.paid?.yesterday_change || 0)}</div>
-              <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上周: {renderChangeBadge(stats?.paid?.last_week_change || 0)}</div>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 4 }}>相较昨日: {renderChangeBadge(stats?.paid?.yesterday_change || 0)}</div>
+              <div style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 4 }}>相较上周: {renderChangeBadge(stats?.paid?.last_week_change || 0)}</div>
               <div style={{ fontSize: 12, color: token.colorTextSecondary }}>相较上月: {renderChangeBadge(stats?.paid?.last_month_change || 0)}</div>
             </div>
           </Card>
@@ -126,43 +138,79 @@ function Dashboard() {
       </Row>
 
       {/* 今日统计 */}
-      <Card title="📅 今日统计" style={{ marginBottom: 24 }}>
+      <Card 
+        title="📅 今日统计" 
+        style={{ 
+          marginBottom: 24,
+          animationDelay: '0.5s'
+        }}
+      >
         <Row gutter={[16, 16]}>
           <Col xs={12} sm={6}>
-            <Statistic
-              title="今日总数"
-              value={stats?.today?.total || 0}
-              valueStyle={{ color: '#1890ff' }}
-            />
+            <div style={{ 
+              padding: '16px', 
+              borderRadius: '8px', 
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              background: token.colorBgContainer,
+              border: `1px solid ${token.colorBorder}`
+            }}>
+              <Statistic
+                title="今日总数"
+                value={stats?.today?.total || 0}
+                valueStyle={{ color: '#1890ff', fontWeight: 'bold', fontSize: 24 }}
+              />
+            </div>
           </Col>
           <Col xs={12} sm={6}>
-            <Statistic
-              title="今日有效"
-              value={stats?.today?.valid || 0}
-              valueStyle={{ color: '#52c41a' }}
-            />
+            <div style={{ 
+              padding: '16px', 
+              borderRadius: '8px', 
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              background: token.colorBgContainer,
+              border: `1px solid ${token.colorBorder}`
+            }}>
+              <Statistic
+                title="今日有效"
+                value={stats?.today?.valid || 0}
+                valueStyle={{ color: '#52c41a', fontWeight: 'bold', fontSize: 24 }}
+              />
+            </div>
           </Col>
           <Col xs={12} sm={6}>
-            <Statistic
-              title="今日限流"
-              value={stats?.today?.rate_limited || 0}
-              valueStyle={{ color: '#fa8c16' }}
-            />
+            <div style={{ 
+              padding: '16px', 
+              borderRadius: '8px', 
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              background: token.colorBgContainer,
+              border: `1px solid ${token.colorBorder}`
+            }}>
+              <Statistic
+                title="今日限流"
+                value={stats?.today?.rate_limited || 0}
+                valueStyle={{ color: '#fa8c16', fontWeight: 'bold', fontSize: 24 }}
+              />
+            </div>
           </Col>
           <Col xs={12} sm={6}>
-            <Statistic
-              title="今日付费"
-              value={stats?.today?.paid || 0}
-              valueStyle={{ color: '#722ed1' }}
-            />
+            <div style={{ 
+              padding: '16px', 
+              borderRadius: '8px', 
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              background: token.colorBgContainer,
+              border: `1px solid ${token.colorBorder}`
+            }}>
+              <Statistic
+                title="今日付费"
+                value={stats?.today?.paid || 0}
+                valueStyle={{ color: '#722ed1', fontWeight: 'bold', fontSize: 24 }}
+              />
+            </div>
           </Col>
         </Row>
-      </Card>
-
-      <Card title="💡 系统提示">
-        <p>• 数据每30秒自动刷新</p>
-        <p>• 密钥数据来自数据库实时统计</p>
-        <p>• 可在"密钥管理"页面查看详细信息</p>
       </Card>
     </div>
   )

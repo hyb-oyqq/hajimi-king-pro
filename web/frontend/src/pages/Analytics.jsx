@@ -40,8 +40,8 @@ function Analytics() {
   }
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 24 }}>📈 统计分析</h2>
+    <div style={{ animation: 'fadeIn 0.6s ease-out' }}>
+      <h2 style={{ marginBottom: 24, fontSize: 32 }}>📈 统计分析</h2>
 
       <Card style={{ marginBottom: 24 }}>
         <div style={{ marginBottom: 16 }}>
@@ -57,18 +57,73 @@ function Analytics() {
       </Card>
 
       {/* 趋势图 */}
-      <Card title="📊 密钥获取趋势" style={{ marginBottom: 24 }}>
+      <Card 
+        title="📊 密钥获取趋势" 
+        style={{ 
+          marginBottom: 24,
+          animationDelay: '0.2s'
+        }}
+      >
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={trendData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="total" stroke="#1890ff" name="总数" />
-            <Line type="monotone" dataKey="valid" stroke="#52c41a" name="有效" />
-            <Line type="monotone" dataKey="rate_limited" stroke="#fa8c16" name="限流" />
-            <Line type="monotone" dataKey="paid" stroke="#722ed1" name="付费" />
+            <defs>
+              <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#1890ff" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#1890ff" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="colorValid" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#52c41a" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#52c41a" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="date" stroke="#888" />
+            <YAxis stroke="#888" />
+            <Tooltip 
+              contentStyle={{ 
+                background: 'rgba(255, 255, 255, 0.95)', 
+                border: '1px solid #e8e8e8',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+              }} 
+            />
+            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+            <Line 
+              type="monotone" 
+              dataKey="total" 
+              stroke="#1890ff" 
+              name="总数" 
+              strokeWidth={3}
+              dot={{ r: 4, fill: '#1890ff' }}
+              activeDot={{ r: 6, fill: '#1890ff' }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="valid" 
+              stroke="#52c41a" 
+              name="有效" 
+              strokeWidth={3}
+              dot={{ r: 4, fill: '#52c41a' }}
+              activeDot={{ r: 6, fill: '#52c41a' }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="rate_limited" 
+              stroke="#fa8c16" 
+              name="限流" 
+              strokeWidth={3}
+              dot={{ r: 4, fill: '#fa8c16' }}
+              activeDot={{ r: 6, fill: '#fa8c16' }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="paid" 
+              stroke="#722ed1" 
+              name="付费" 
+              strokeWidth={3}
+              dot={{ r: 4, fill: '#722ed1' }}
+              activeDot={{ r: 6, fill: '#722ed1' }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </Card>
@@ -76,7 +131,12 @@ function Analytics() {
       {/* 类型分布 */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={{ span: 12, offset: 6 }}>
-          <Card title="🎯 密钥类型分布">
+          <Card 
+            title="🎯 密钥类型分布"
+            style={{
+              animationDelay: '0.3s'
+            }}
+          >
             <ResponsiveContainer width="100%" height={400}>
               <PieChart>
                 <Pie
@@ -85,15 +145,28 @@ function Analytics() {
                   cy="50%"
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={120}
+                  outerRadius={130}
+                  innerRadius={60}
                   fill="#8884d8"
                   dataKey="value"
+                  paddingAngle={5}
                 >
                   {typeDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={COLORS[index % COLORS.length]}
+                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))' }}
+                    />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: 'rgba(255, 255, 255, 0.95)', 
+                    border: '1px solid #e8e8e8',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                  }} 
+                />
               </PieChart>
             </ResponsiveContainer>
           </Card>
