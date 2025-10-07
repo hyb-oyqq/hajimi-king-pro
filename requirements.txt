@@ -3,6 +3,7 @@
 # Web 框架
 flask>=3.0.0
 flask-cors>=4.0.0
+gunicorn>=21.2.0
 
 # 环境变量管理
 python-dotenv>=1.1.1

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   hajimi-king-pro:
-    image: hajimi-king-pro:0.0.1
+    image: ghcr.io/hyb-oyqq/hajimi-king-pro:dev-08781bb
     container_name: hajimi-king-pro
     restart: unless-stopped
     network_mode: host

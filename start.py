@@ -70,13 +70,45 @@ def start_web_server():
         print("❌ 找不到 web/api.py")
         return None
     
-    # Web 服务器日志输出到控制台
+    # 检测是否在 Docker 环境
+    in_docker = is_docker_environment()
+    
+    # 获取配置
+    from dotenv import load_dotenv
+    load_dotenv()
+    web_host = os.getenv('WEB_HOST', '0.0.0.0')
+    web_port = os.getenv('WEB_PORT', '5000')
+    
+    # 在生产环境（Docker）使用 Gunicorn，否则使用开发服务器
+    if in_docker:
+        try:
+            # 使用 Gunicorn 启动（生产环境）
+            process = subprocess.Popen(
+                [
+                    sys.executable, "-m", "gunicorn",
+                    "--bind", f"{web_host}:{web_port}",
+                    "--workers", "4",
+                    "--worker-class", "sync",
+                    "--timeout", "120",
+                    "--access-logfile", "-",
+                    "--error-logfile", "-",
+                    "web.api:app"
+                ],
+                cwd=str(project_root)
+            )
+            print("✅ Web 面板启动中（使用 Gunicorn 生产服务器）...")
+            return process
+        except Exception as e:
+            print(f"⚠️  Gunicorn 启动失败: {e}")
+            print("   回退到 Flask 开发服务器...")
+    
+    # 使用 Flask 开发服务器（开发环境）
     process = subprocess.Popen(
         [sys.executable, str(web_script)],
         cwd=str(project_root)
     )
     
-    print("✅ Web 面板启动中...")
+    print("✅ Web 面板启动中（使用 Flask 开发服务器）...")
     return process
 
 
