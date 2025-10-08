@@ -171,16 +171,30 @@ def start_main_app():
             print(f"   请将 env.example 复制为 {env_file} 并配置必要参数")
             return None
     
-    # 主程序日志只写入文件，不输出到控制台
-    # 使用 DEVNULL 抑制标准输出和标准错误
-    process = subprocess.Popen(
-        [sys.executable, str(app_script)],
-        cwd=str(project_root),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
-    )
+    # 检查是否启用调试模式
+    from dotenv import load_dotenv
+    load_dotenv()
+    debug_mode = os.getenv('DEBUG', 'false').lower() in ('true', '1', 'yes')
     
-    print("✅ 主程序启动中（日志已重定向到文件，请在 Web 面板查看）...")
+    if debug_mode:
+        # 调试模式：主程序日志输出到控制台
+        process = subprocess.Popen(
+            [sys.executable, str(app_script)],
+            cwd=str(project_root),
+            stdout=sys.stdout,
+            stderr=sys.stderr
+        )
+        print("✅ 主程序启动中（调试模式：日志输出到控制台和文件）...")
+    else:
+        # 正常模式：主程序日志只写入文件，不输出到控制台
+        process = subprocess.Popen(
+            [sys.executable, str(app_script)],
+            cwd=str(project_root),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        print("✅ 主程序启动中（日志已重定向到文件，请在 Web 面板查看）...")
+    
     return process
 def check_process_startup(process, name, timeout=3):
     """检查进程启动是否成功"""
@@ -354,6 +368,11 @@ def main():
             print("❌ 主程序启动失败")
             sys.exit(1)
     
+    # 检查是否启用调试模式
+    from dotenv import load_dotenv
+    load_dotenv()
+    debug_mode = os.getenv('DEBUG', 'false').lower() in ('true', '1', 'yes')
+    
     print("\n" + "=" * 60)
     if web_panel_enabled:
         if len(processes) == 2:
@@ -362,8 +381,14 @@ def main():
             print("\n📊 Web 面板: http://localhost:5000")
             print("🔑 主程序: 正在后台运行")
             print("\n💡 提示:")
-            print("   • Web 面板日志会显示在此控制台")
-            print("   • 主程序日志已写入文件，请在 Web 面板的「日志」页面查看")
+            if debug_mode:
+                print("   • 调试模式已启用")
+                print("   • 控制台会同时显示 Web 面板和主程序的日志")
+                print("   • 日志同时写入文件，可在 Web 面板的「日志」页面查看")
+            else:
+                print("   • Web 面板日志会显示在此控制台")
+                print("   • 主程序日志已写入文件，请在 Web 面板的「日志」页面查看")
+                print("   • 如需同时查看所有日志，请在 .env 中设置 DEBUG=true")
         else:
             print("✅ Web 面板已启动！")
             print("=" * 60)

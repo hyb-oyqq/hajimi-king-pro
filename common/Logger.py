@@ -16,22 +16,26 @@ def get_log_dir():
 log_dir = get_log_dir()
 log_file = log_dir / f"hajimi_king_pro_{datetime.now().strftime('%Y%m%d')}.log"
 
+# 检查是否启用调试模式
+debug_mode = os.getenv('DEBUG', 'false').lower() in ('true', '1', 'yes')
+log_level = logging.DEBUG if debug_mode else logging.INFO
+
 # 创建格式化器
 formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
 
 # 创建文件处理器
 file_handler = logging.FileHandler(log_file, encoding='utf-8')
 file_handler.setFormatter(formatter)
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(log_level)
 
 # 创建控制台处理器
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(log_level)
 
 # 配置根日志记录器
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     handlers=[file_handler, console_handler]
 )
 
